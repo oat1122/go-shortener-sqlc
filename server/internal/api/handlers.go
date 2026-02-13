@@ -13,10 +13,7 @@ import (
 	"go-shortener-sqlc/internal/db"
 )
 
-type Server struct {
-	Queries *db.Queries
-	DB      *sql.DB
-}
+
 
 type ShortenRequest struct {
 	URL string `json:"url"`

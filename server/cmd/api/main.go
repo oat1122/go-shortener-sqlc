@@ -1,66 +1,31 @@
 package main
 
 import (
-	"database/sql"
 	"log"
 	"net/http"
-	"os"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/joho/godotenv"
 
 	"go-shortener-sqlc/internal/api"
-	"go-shortener-sqlc/internal/db"
+	"go-shortener-sqlc/internal/config"
+	"go-shortener-sqlc/internal/database"
 )
 
 func main() {
-	// Load environment variables
-	// Try loading from current directory first, then fallback to relative path
-	if err := godotenv.Load(); err != nil {
-		if err := godotenv.Load("../../.env"); err != nil {
-			log.Println("No .env file found, using default/system environment variables")
-		}
-	}
+	// 1. Load Configuration
+	cfg := config.Load()
 
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		log.Fatal("DATABASE_URL must be set")
-	}
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	// Connect to database
-	conn, err := sql.Open("mysql", dbURL)
+	// 2. Connect to Database
+	db, err := database.New(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Unable to connect to database: %v\n", err)
+		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	defer conn.Close()
+	defer db.Close()
 
-	if err := conn.Ping(); err != nil {
-		log.Fatalf("Unable to ping database: %v\n", err)
-	}
+	// 3. Initialize Server
+	srv := api.NewServer(db)
 
-	queries := db.New(conn)
-	server := &api.Server{
-		Queries: queries,
-		DB:      conn,
-	}
-
-	// Setup Router
-	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-
-	r.Post("/shorten", server.ShortenURL)
-	r.Get("/{code}", server.RedirectURL)
-
-	log.Printf("Server starting on port %s", port)
-	if err := http.ListenAndServe(":"+port, r); err != nil {
+	// 4. Start Server
+	log.Printf("Server starting on port %s", cfg.Port)
+	if err := http.ListenAndServe(":"+cfg.Port, srv.Routes()); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }
