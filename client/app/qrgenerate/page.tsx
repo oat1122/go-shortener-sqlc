@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -27,6 +28,29 @@ export default function QrGeneratePage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoSize, setLogoSize] = useState(100);
   const [borderRadius, setBorderRadius] = useState(0);
+
+  const debouncedLogoSize = useDebounce(logoSize, 500);
+  const debouncedBorderRadius = useDebounce(borderRadius, 500);
+
+  // Auto-regenerate QR code when slider values change (debounced)
+  useEffect(() => {
+    if (shortCode && logoFile) {
+      const updateQR = async () => {
+        try {
+          // Silent update - don't set loading state to avoid flickering
+          const qrBlob = await api.generateQR(shortCode, logoFile, {
+            logoSize: debouncedLogoSize,
+            borderRadius: debouncedBorderRadius,
+          });
+          const url = URL.createObjectURL(qrBlob);
+          setQrBlobUrl(url);
+        } catch (err) {
+          console.error("Failed to update QR code:", err);
+        }
+      };
+      updateQR();
+    }
+  }, [debouncedLogoSize, debouncedBorderRadius, shortCode, logoFile]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
