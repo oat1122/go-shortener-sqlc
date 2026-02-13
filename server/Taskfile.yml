@@ -1,0 +1,17 @@
+version: "3"
+
+tasks:
+  dev:
+    desc: "Run the server"
+    cmds:
+      - go run cmd/api/main.go
+
+  sqlc:
+    desc: "Generate SQLC code"
+    cmds:
+      - sqlc generate
+
+  fmt:
+    desc: "Format code"
+    cmds:
+      - go fmt ./...
