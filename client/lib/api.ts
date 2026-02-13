@@ -11,8 +11,7 @@ export interface ApiError {
   error: string;
 }
 
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const api = {
   shorten: async (url: string): Promise<ShortenResponse> => {
@@ -27,16 +26,49 @@ export const api = {
     if (!res.ok) {
       // Try to parse error message from server
       let errorMessage = "Failed to shorten URL";
+
       try {
         const errorData = await res.text();
+
         // If server returns plain text error (http.Error does this with \n)
         errorMessage = errorData.trim() || errorMessage;
-      } catch (e) {
+      } catch {
         // ignore json parse error
       }
       throw new Error(errorMessage);
     }
 
     return res.json();
+  },
+
+  generateQR: async (
+    code: string,
+    logo?: File,
+    options?: { logoSize?: number; borderRadius?: number },
+  ): Promise<Blob> => {
+    const formData = new FormData();
+
+    if (logo) {
+      formData.append("logo", logo);
+    }
+
+    if (options?.logoSize) {
+      formData.append("logo_size", options.logoSize.toString());
+    }
+
+    if (options?.borderRadius !== undefined) {
+      formData.append("border_radius", options.borderRadius.toString());
+    }
+
+    const res = await fetch(`${API_URL}/${code}/qr`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to generate QR code");
+    }
+
+    return res.blob();
   },
 };

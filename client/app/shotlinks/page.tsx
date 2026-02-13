@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { api } from "@/lib/api";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
-import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Card, CardBody } from "@heroui/card";
 import { Copy, Check, Link as LinkIcon, AlertCircle } from "lucide-react";
+
+import { api } from "@/lib/api";
 
 export default function ShortenerPage() {
   const [url, setUrl] = useState("");
@@ -26,6 +27,7 @@ export default function ShortenerPage() {
       const data = await api.shorten(url);
       const origin =
         typeof window !== "undefined" ? window.location.origin : "";
+
       setShortUrl(`${origin}/${data.short_code}`);
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred");
@@ -58,24 +60,24 @@ export default function ShortenerPage() {
           <CardBody className="gap-6 p-6">
             <div className="flex flex-col gap-4">
               <Input
-                size="lg"
-                label="Long URL"
-                placeholder="https://example.com/very/long/url..."
-                value={url}
-                onValueChange={setUrl}
-                startContent={<LinkIcon className="text-gray-400 w-4 h-4" />}
-                variant="bordered"
                 classNames={{
                   inputWrapper: "bg-white dark:bg-gray-900",
                 }}
+                label="Long URL"
+                placeholder="https://example.com/very/long/url..."
+                size="lg"
+                startContent={<LinkIcon className="text-gray-400 w-4 h-4" />}
+                value={url}
+                variant="bordered"
+                onValueChange={setUrl}
               />
 
               <Button
+                className="font-semibold bg-gradient-to-r from-blue-600 to-violet-600 shadow-lg shadow-blue-500/30"
                 color="primary"
+                isLoading={loading}
                 size="lg"
                 onPress={handleShorten}
-                isLoading={loading}
-                className="font-semibold bg-gradient-to-r from-blue-600 to-violet-600 shadow-lg shadow-blue-500/30"
               >
                 {loading ? "Shortening..." : "Shorten URL"}
               </Button>
@@ -99,10 +101,10 @@ export default function ShortenerPage() {
                   </div>
                   <Button
                     isIconOnly
+                    className="shrink-0"
                     color={copied ? "success" : "default"}
                     variant="flat"
                     onPress={copyToClipboard}
-                    className="shrink-0"
                   >
                     {copied ? (
                       <Check className="w-4 h-4" />

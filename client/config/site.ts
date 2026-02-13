@@ -12,6 +12,10 @@ export const siteConfig = {
       label: "Shotlinks",
       href: "/shotlinks",
     },
+    {
+      label: "QR Generate",
+      href: "/qrgenerate",
+    },
   ],
   navMenuItems: [
     {

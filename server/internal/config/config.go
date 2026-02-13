@@ -12,6 +12,7 @@ type Config struct {
 	Port           string
 	DatabaseURL    string
 	AllowedOrigins []string
+	BaseURL        string
 }
 
 func Load() *Config {
@@ -37,10 +38,16 @@ func Load() *Config {
 		allowedOrigins = "http://localhost:3000" // Default for dev
 	}
 
+	baseURL := os.Getenv("BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:3000"
+	}
+
 	return &Config{
 		Port:           port,
 		DatabaseURL:    dbURL,
 		AllowedOrigins: strings.Split(allowedOrigins, ","),
+		BaseURL:        baseURL,
 	}
 }
 

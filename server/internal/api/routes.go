@@ -28,6 +28,7 @@ func (s *Server) Routes() http.Handler {
 	// Routes
 	r.Post("/shorten", s.ShortenURL)
 	r.Get("/{code}", s.RedirectURL)
+	r.Post("/{code}/qr", s.GenerateQR)
 
 	return r
 }

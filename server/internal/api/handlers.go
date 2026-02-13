@@ -7,11 +7,18 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"image"
+	_ "image/jpeg" // Support JPEG decoding
+	_ "image/png"  // Support PNG decoding
+	"io"
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/yeqown/go-qrcode/v2"
+	"github.com/yeqown/go-qrcode/writer/standard"
 
 	"go-shortener-sqlc/internal/db"
 )
@@ -151,3 +158,92 @@ func generateShortCode() (string, error) {
 	}
 	return base64.URLEncoding.EncodeToString(b)[:6], nil
 }
+
+func (s *Server) GenerateQR(w http.ResponseWriter, r *http.Request) {
+	code := chi.URLParam(r, "code")
+	if code == "" {
+		http.Error(w, "Short code is required", http.StatusBadRequest)
+		return
+	}
+
+	// 1. Construct the full URL
+	fullURL := s.Config.BaseURL + "/" + code
+
+	// 2. Parse uploaded logo (if any)
+	// Limit upload size to 5MB
+	r.ParseMultipartForm(5 << 20)
+	
+	// Parse options
+	logoSizeStr := r.FormValue("logo_size")
+	logoSize, _ := strconv.Atoi(logoSizeStr)
+	if logoSize <= 0 {
+		logoSize = 100 // Default
+	}
+	// Cap max size to avoid breaking QR code or being too large
+	if logoSize > 240 {
+		logoSize = 240
+	}
+
+	borderRadiusStr := r.FormValue("border_radius")
+	borderRadius, _ := strconv.Atoi(borderRadiusStr)
+	if borderRadius < 0 {
+		borderRadius = 0
+	}
+
+	file, header, err := r.FormFile("logo")
+
+	var options []standard.ImageOption
+	// Default options
+	options = append(options, standard.WithBgColorRGBHex("#FFFFFF"))
+	options = append(options, standard.WithFgColorRGBHex("#000000"))
+	options = append(options, standard.WithQRWidth(40)) // Increase module size further to safely support 250px logos
+
+	if err == nil {
+		log.Printf("Received logo file: %s, size: %d, target size: %d, radius: %d", header.Filename, header.Size, logoSize, borderRadius)
+		defer file.Close()
+		// Decode the image
+		img, format, err := image.Decode(file)
+		if err != nil {
+			log.Printf("Error decoding logo: %v", err)
+			http.Error(w, "Invalid logo image", http.StatusBadRequest)
+			return
+		}
+		log.Printf("Successfully decoded logo. Format: %s", format)
+
+		// Resize logo
+		newImg := resizeImage(img, logoSize)
+		
+		// Apply border radius
+		if borderRadius > 0 {
+			newImg = applyBorderRadius(newImg, borderRadius)
+		}
+
+		// Add logo options
+		options = append(options, standard.WithLogoImage(newImg))
+	}
+
+	// 3. Generate QR Code
+	qrc, err := qrcode.New(fullURL)
+	if err != nil {
+		log.Printf("Error generating QR code object: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// 4. Write to response
+	w.Header().Set("Content-Type", "image/png")
+	
+	wr := standard.NewWithWriter(nopCloser{w}, options...)
+	if err = qrc.Save(wr); err != nil {
+		log.Printf("Error saving QR code: %v", err)
+		return
+	}
+}
+
+// nopCloser aids in adapting http.ResponseWriter to io.WriteCloser if needed
+type nopCloser struct {
+	io.Writer
+}
+
+func (nopCloser) Close() error { return nil }
+
