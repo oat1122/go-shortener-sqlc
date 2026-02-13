@@ -9,8 +9,9 @@ import (
 )
 
 type Url struct {
-	ID          int64
-	ShortCode   string
-	OriginalUrl string
-	CreatedAt   time.Time
+	ID          int32     `json:"id"`
+	ShortCode   string    `json:"short_code"`
+	OriginalUrl string    `json:"original_url"`
+	UrlHash     string    `json:"url_hash"`
+	CreatedAt   time.Time `json:"created_at"`
 }

@@ -42,6 +42,12 @@ func TestShortenURL(t *testing.T) {
 			name: "Success",
 			body: ShortenRequest{URL: "https://example.com"},
 			mockBehavior: func() {
+				// Expect check for collision (GetURL returns no rows)
+				mock.ExpectQuery("SELECT id, short_code, original_url, created_at FROM urls").
+					WithArgs(sqlmock.AnyArg()).
+					WillReturnError(sql.ErrNoRows)
+
+				// Expect insertion
 				mock.ExpectExec("INSERT INTO urls").
 					WithArgs(sqlmock.AnyArg(), "https://example.com").
 					WillReturnResult(sqlmock.NewResult(1, 1))
@@ -61,9 +67,20 @@ func TestShortenURL(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
+			name:           "Invalid URL Format",
+			body:           ShortenRequest{URL: "ftp://example.com"},
+			mockBehavior:   func() {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
 			name: "Database Error",
 			body: ShortenRequest{URL: "https://example.com"},
 			mockBehavior: func() {
+				// Expect collision check first
+				mock.ExpectQuery("SELECT id, short_code, original_url, created_at FROM urls").
+					WithArgs(sqlmock.AnyArg()).
+					WillReturnError(sql.ErrNoRows)
+
 				mock.ExpectExec("INSERT INTO urls").
 					WithArgs(sqlmock.AnyArg(), "https://example.com").
 					WillReturnError(errors.New("db error"))

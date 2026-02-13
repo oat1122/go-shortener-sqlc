@@ -12,23 +12,24 @@ import (
 
 const createURL = `-- name: CreateURL :execresult
 INSERT INTO urls (
-  short_code, original_url
+  short_code, original_url, url_hash
 ) VALUES (
-  ?, ?
+  ?, ?, ?
 )
 `
 
 type CreateURLParams struct {
-	ShortCode   string
-	OriginalUrl string
+	ShortCode   string `json:"short_code"`
+	OriginalUrl string `json:"original_url"`
+	UrlHash     string `json:"url_hash"`
 }
 
 func (q *Queries) CreateURL(ctx context.Context, arg CreateURLParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, createURL, arg.ShortCode, arg.OriginalUrl)
+	return q.db.ExecContext(ctx, createURL, arg.ShortCode, arg.OriginalUrl, arg.UrlHash)
 }
 
 const getURL = `-- name: GetURL :one
-SELECT id, short_code, original_url, created_at FROM urls
+SELECT id, short_code, original_url, url_hash, created_at FROM urls
 WHERE short_code = ? LIMIT 1
 `
 
@@ -39,6 +40,25 @@ func (q *Queries) GetURL(ctx context.Context, shortCode string) (Url, error) {
 		&i.ID,
 		&i.ShortCode,
 		&i.OriginalUrl,
+		&i.UrlHash,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getURLByHash = `-- name: GetURLByHash :one
+SELECT id, short_code, original_url, url_hash, created_at FROM urls
+WHERE url_hash = ? LIMIT 1
+`
+
+func (q *Queries) GetURLByHash(ctx context.Context, urlHash string) (Url, error) {
+	row := q.db.QueryRowContext(ctx, getURLByHash, urlHash)
+	var i Url
+	err := row.Scan(
+		&i.ID,
+		&i.ShortCode,
+		&i.OriginalUrl,
+		&i.UrlHash,
 		&i.CreatedAt,
 	)
 	return i, err
