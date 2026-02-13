@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "nodemon --exec next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint --fix"
@@ -79,6 +79,7 @@
     "eslint-plugin-react-hooks": "5.2.0",
     "eslint-plugin-unused-imports": "4.1.4",
     "globals": "16.0.0",
+    "nodemon": "^3.1.11",
     "postcss": "8.5.6",
     "prettier": "3.5.3",
     "tailwind-variants": "3.2.2",

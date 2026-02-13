@@ -21,7 +21,7 @@ func main() {
 	defer db.Close()
 
 	// 3. Initialize Server
-	srv := api.NewServer(db)
+	srv := api.NewServer(db, cfg)
 
 	// 4. Start Server
 	log.Printf("Server starting on port %s", cfg.Port)

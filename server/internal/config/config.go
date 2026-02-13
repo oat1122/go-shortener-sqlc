@@ -3,13 +3,15 @@ package config
 import (
 	"log"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	Port        string
-	DatabaseURL string
+	Port           string
+	DatabaseURL    string
+	AllowedOrigins []string
 }
 
 func Load() *Config {
@@ -30,9 +32,15 @@ func Load() *Config {
 		log.Fatal("DATABASE_URL must be set")
 	}
 
+	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+	if allowedOrigins == "" {
+		allowedOrigins = "http://localhost:3000" // Default for dev
+	}
+
 	return &Config{
-		Port:        port,
-		DatabaseURL: dbURL,
+		Port:           port,
+		DatabaseURL:    dbURL,
+		AllowedOrigins: strings.Split(allowedOrigins, ","),
 	}
 }
 
