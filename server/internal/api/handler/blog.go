@@ -222,6 +222,22 @@ func (h *BlogHandler) GetPostBySlug(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(post)
 }
 
+func (h *BlogHandler) GetPost(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	post, err := h.Service.GetPost(r.Context(), id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "Post not found", http.StatusNotFound)
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(post)
+}
+
 // Simple Admin List (All Posts)
 func (h *BlogHandler) ListPosts(w http.ResponseWriter, r *http.Request) {
 	posts, err := h.Service.ListPosts(r.Context())

@@ -1,21 +1,11 @@
 import { useMutation } from "@tanstack/react-query";
 import { addToast } from "@heroui/toast";
 
-import apiClient from "@/lib/axios";
-
-export interface ShortenResponse {
-  short_code: string;
-}
-
-const shortenUrl = async (url: string): Promise<ShortenResponse> => {
-  const response = await apiClient.post<ShortenResponse>("/shorten", { url });
-
-  return response.data;
-};
+import { shortenerService } from "@/services/shortenerService";
 
 export const useShortenUrl = () => {
   return useMutation({
-    mutationFn: shortenUrl,
+    mutationFn: shortenerService.shorten,
     onError: () => {
       addToast({
         title: "Error",
@@ -23,5 +13,19 @@ export const useShortenUrl = () => {
         color: "danger",
       });
     },
+  });
+};
+
+export const useGenerateQR = () => {
+  return useMutation({
+    mutationFn: ({
+      code,
+      logo,
+      options,
+    }: {
+      code: string;
+      logo?: File;
+      options?: any;
+    }) => shortenerService.generateQR(code, logo, options),
   });
 };

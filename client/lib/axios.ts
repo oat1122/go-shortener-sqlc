@@ -12,10 +12,6 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     // You can add auth tokens here if not using cookies
-    // const token = useAuthStore.getState().token;
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
     return config;
   },
   (error) => {

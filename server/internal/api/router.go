@@ -65,6 +65,7 @@ func (s *Server) Routes() http.Handler {
 			r.Delete("/tags/{id}", s.BlogHandler.DeleteTag)
 
 			r.Get("/admin/posts", s.BlogHandler.ListPosts)
+			r.Get("/admin/posts/{id}", s.BlogHandler.GetPost)
 			r.Post("/admin/posts", s.BlogHandler.CreatePost)
 			r.Put("/admin/posts/{id}", s.BlogHandler.UpdatePost)
 			r.Patch("/admin/posts/{id}/views", s.BlogHandler.UpdatePostViews)
