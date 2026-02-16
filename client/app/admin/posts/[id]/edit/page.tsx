@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { Input, Textarea } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -14,8 +14,13 @@ import RichTextEditor from "@/components/editor/RichTextEditor";
 import { usePost, useUpdatePost } from "@/hooks/usePosts";
 import { useCategories } from "@/hooks/useCategories";
 
-export default function EditPostPage({ params }: { params: { id: string } }) {
-  const { data: post, isLoading: isPostLoading } = usePost(params.id);
+export default function EditPostPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+  const { data: post, isLoading: isPostLoading } = usePost(id);
   const { data: categories = [] } = useCategories();
   const updateMutation = useUpdatePost();
 
@@ -44,7 +49,7 @@ export default function EditPostPage({ params }: { params: { id: string } }) {
   const handleUpdate = async () => {
     try {
       await updateMutation.mutateAsync({
-        id: params.id,
+        id: id,
         data: {
           title,
           slug,

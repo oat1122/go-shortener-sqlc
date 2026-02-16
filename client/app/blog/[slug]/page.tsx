@@ -6,7 +6,7 @@ import BlogPostClient from "./BlogPostClient";
 import { Post } from "@/types/blog";
 
 interface PageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 // Keep server-side fetch for Metadata (SEO)
@@ -34,7 +34,8 @@ async function getPost(slug: string): Promise<Post | null> {
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const post = await getPost(params.slug);
+  const { slug } = await params;
+  const post = await getPost(slug);
 
   if (!post) {
     return {
@@ -57,6 +58,8 @@ export async function generateMetadata({
   };
 }
 
-export default function BlogPostPage({ params }: PageProps) {
-  return <BlogPostClient slug={params.slug} />;
+export default async function BlogPostPage({ params }: PageProps) {
+  const { slug } = await params;
+
+  return <BlogPostClient slug={slug} />;
 }

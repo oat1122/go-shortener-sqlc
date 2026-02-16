@@ -23,6 +23,18 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post }) => {
     });
   };
 
+  const getString = (val: any): string => {
+    if (typeof val === "string") return val;
+    if (val && typeof val === "object" && "String" in val) {
+      return val.String || "";
+    }
+    return "";
+  };
+
+  const title = getString(post.title);
+  const excerpt = getString(post.excerpt);
+  const content = getString(post.content);
+
   return (
     <Card
       isPressable
@@ -32,7 +44,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post }) => {
       <Link className="w-full h-full" href={`/blog/${post.slug}`}>
         <CardBody className="overflow-visible p-0">
           <Image
-            alt={post.title}
+            alt={title}
             className="w-full object-cover h-[200px]"
             radius="lg"
             shadow="sm"
@@ -55,9 +67,9 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post }) => {
               <span>{post.views}</span>
             </div>
           </div>
-          <b className="text-lg line-clamp-2">{post.title}</b>
+          <b className="text-lg line-clamp-2">{title}</b>
           <p className="text-default-500 line-clamp-3">
-            {post.excerpt || post.content.substring(0, 100)}...
+            {excerpt || content.substring(0, 100)}...
           </p>
           <div className="flex gap-2 items-center text-default-400 mt-2">
             <Calendar size={14} />

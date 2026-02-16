@@ -1,4 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
+import { addToast } from "@heroui/toast";
 
 import apiClient from "@/lib/axios";
 
@@ -15,5 +16,12 @@ const shortenUrl = async (url: string): Promise<ShortenResponse> => {
 export const useShortenUrl = () => {
   return useMutation({
     mutationFn: shortenUrl,
+    onError: () => {
+      addToast({
+        title: "Error",
+        description: "Failed to shorten URL",
+        color: "danger",
+      });
+    },
   });
 };

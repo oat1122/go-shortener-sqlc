@@ -1,3 +1,5 @@
+import apiClient from "./axios";
+
 // Define types for Request and Response
 export interface ShortenRequest {
   url: string;
@@ -15,30 +17,8 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const api = {
   shorten: async (url: string): Promise<ShortenResponse> => {
-    const res = await fetch(`${API_URL}/shorten`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ url }),
-    });
-
-    if (!res.ok) {
-      // Try to parse error message from server
-      let errorMessage = "Failed to shorten URL";
-
-      try {
-        const errorData = await res.text();
-
-        // If server returns plain text error (http.Error does this with \n)
-        errorMessage = errorData.trim() || errorMessage;
-      } catch {
-        // ignore json parse error
-      }
-      throw new Error(errorMessage);
-    }
-
-    return res.json();
+    const res = await apiClient.post<ShortenResponse>("/shorten", { url });
+    return res.data;
   },
 
   generateQR: async (
@@ -83,15 +63,13 @@ export const api = {
       formData.append("gradient_end", options.gradientEnd);
     }
 
-    const res = await fetch(`${API_URL}/${code}/qr`, {
-      method: "POST",
-      body: formData,
+    const res = await apiClient.post(`${API_URL}/${code}/qr`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      responseType: "blob",
     });
 
-    if (!res.ok) {
-      throw new Error("Failed to generate QR code");
-    }
-
-    return res.blob();
+    return res.data;
   },
 };
