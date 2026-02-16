@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react";
 import { Input, Textarea } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -10,16 +9,17 @@ import { Image } from "@heroui/image";
 import { Save, ArrowLeft, Upload } from "lucide-react";
 import Link from "next/link";
 
-import RichTextEditor from "@/components/editor/RichTextEditor";
-import { useCreatePost } from "@/hooks/usePosts";
-import { useCategories } from "@/hooks/useCategories";
 import { PostStatus } from "@/types/blog";
+import RichTextEditor from "@/components/editor/RichTextEditor";
+import { usePost, useUpdatePost } from "@/hooks/usePosts";
+import { useCategories } from "@/hooks/useCategories";
 
-export default function CreatePostPage() {
-  const router = useRouter();
-  const createMutation = useCreatePost();
+export default function EditPostPage({ params }: { params: { id: string } }) {
+  const { data: post, isLoading: isPostLoading } = usePost(params.id);
   const { data: categories = [] } = useCategories();
+  const updateMutation = useUpdatePost();
 
+  // Form State
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [content, setContent] = useState("");
@@ -28,39 +28,52 @@ export default function CreatePostPage() {
   const [status, setStatus] = useState<PostStatus>("draft");
   const [categoryId, setCategoryId] = useState("");
 
-  // Auto-generate slug from title if slug is empty
-  const handleTitleChange = (val: string) => {
-    setTitle(val);
-    if (!slug) {
-      setSlug(
-        val
-          .toLowerCase()
-          .replace(/ /g, "-")
-          .replace(/[^\w-]+/g, ""),
-      );
+  // Sync state with post data when loaded
+  useEffect(() => {
+    if (post) {
+      setTitle(post.title);
+      setSlug(post.slug);
+      setContent(post.content);
+      setExcerpt(post.excerpt || "");
+      setFeaturedImage(post.featured_image || "");
+      setStatus(post.status);
+      setCategoryId(post.category_id);
     }
-  };
+  }, [post]);
 
-  const handleSubmit = async () => {
+  const handleUpdate = async () => {
     try {
-      await createMutation.mutateAsync({
-        title,
-        slug,
-        content,
-        excerpt,
-        featured_image: featuredImage,
-        status,
-        category_id: categoryId,
-        // published_at: status === 'published' ? new Date().toISOString() : null,
+      await updateMutation.mutateAsync({
+        id: params.id,
+        data: {
+          title,
+          slug,
+          content,
+          excerpt,
+          featured_image: featuredImage,
+          status,
+          category_id: categoryId,
+        },
       });
 
-      router.push("/admin/posts");
+      alert("Post updated successfully!");
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error(error);
-      alert("Failed to create post");
+      alert("Failed to update post");
     }
   };
+
+  if (isPostLoading) return <div className="p-8 text-center">Loading...</div>;
+  if (!post)
+    return (
+      <div className="p-8 text-center">
+        Post not found.{" "}
+        <Link className="underline" href="/admin/posts">
+          Go back
+        </Link>
+      </div>
+    );
 
   return (
     <div className="max-w-7xl mx-auto pb-20">
@@ -72,23 +85,16 @@ export default function CreatePostPage() {
               <ArrowLeft size={20} />
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold">Create New Post</h1>
+          <h1 className="text-2xl font-bold">Edit Post</h1>
         </div>
         <div className="flex gap-2">
           <Button
-            color="default"
-            variant="flat"
-            onPress={() => setStatus("draft")}
-          >
-            Save Draft
-          </Button>
-          <Button
             color="primary"
-            isLoading={createMutation.isPending}
+            isLoading={updateMutation.isPending}
             startContent={<Save size={18} />}
-            onPress={handleSubmit}
+            onPress={handleUpdate}
           >
-            Publish
+            Update Post
           </Button>
         </div>
       </div>
@@ -108,7 +114,7 @@ export default function CreatePostPage() {
                 size="lg"
                 value={title}
                 variant="bordered"
-                onValueChange={handleTitleChange}
+                onValueChange={setTitle}
               />
 
               <div>
@@ -169,7 +175,6 @@ export default function CreatePostPage() {
                   <SelectItem key={cat.id}>{cat.name}</SelectItem>
                 ))}
               </Select>
-              {/* Todo: Tag input */}
             </CardBody>
           </Card>
 

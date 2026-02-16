@@ -60,6 +60,10 @@ func (s *Server) Routes() http.Handler {
 			r.Put("/categories/{id}", s.BlogHandler.UpdateCategory)
 			r.Delete("/categories/{id}", s.BlogHandler.DeleteCategory)
 
+			r.Post("/tags", s.BlogHandler.CreateTag)
+			r.Put("/tags/{id}", s.BlogHandler.UpdateTag)
+			r.Delete("/tags/{id}", s.BlogHandler.DeleteTag)
+
 			r.Get("/admin/posts", s.BlogHandler.ListPosts)
 			r.Post("/admin/posts", s.BlogHandler.CreatePost)
 			r.Put("/admin/posts/{id}", s.BlogHandler.UpdatePost)

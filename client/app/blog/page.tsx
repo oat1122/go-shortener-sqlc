@@ -1,42 +1,12 @@
+"use client";
+
 import React from "react";
-import { Metadata } from "next";
-import { Post } from "@/types/blog";
+
 import { BlogCard } from "@/components/BlogCard";
+import { usePublicPosts } from "@/hooks/usePosts";
 
-export const metadata: Metadata = {
-  title: "Blog - URL Shortener & QR Code Generator",
-  description:
-    "Read our latest articles about SEO, Digital Marketing, and Technology.",
-};
-
-async function getPosts(): Promise<Post[]> {
-  try {
-    // In a real production app, use an environment variable for the API base URL
-    // For now, assuming localhost:8080 or wherever the Go server runs
-    // During build time (SSG), this might fail if the server isn't running, so we might need ISR or client-side fetch.
-    // However, "Plan Be" implies a robust plan. Let's use `fetch` with `next: { revalidate: 60 }` for ISR.
-
-    // Note: This requires the Go server to be accessible.
-    // If running in Docker compose, use service name. If local, use localhost.
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/blog`, {
-      next: { revalidate: 60 },
-    });
-
-    if (!res.ok) {
-      console.error("Failed to fetch posts:", res.statusText);
-      return [];
-    }
-
-    const data = await res.json();
-    return data || [];
-  } catch (error) {
-    console.error("Error fetching posts:", error);
-    return [];
-  }
-}
-
-export default async function BlogPage() {
-  const posts = await getPosts();
+export default function BlogPage() {
+  const { data: posts = [], isLoading } = usePublicPosts();
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -48,7 +18,11 @@ export default async function BlogPage() {
         </p>
       </header>
 
-      {posts.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-20">
+          <p className="text-xl text-default-400">Loading posts...</p>
+        </div>
+      ) : posts.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-xl text-default-400">
             No posts available yet. Check back soon!

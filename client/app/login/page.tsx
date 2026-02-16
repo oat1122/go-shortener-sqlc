@@ -7,7 +7,6 @@ import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Alert } from "@heroui/alert";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
-import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -44,7 +43,7 @@ export default function LoginPage() {
       // Login successful, redirect to admin dashboard
       router.push("/admin/posts");
       router.refresh(); // Refresh to update auth state (if any)
-    } catch (err) {
+    } catch {
       setError("Invalid username or password");
     } finally {
       setLoading(false);
@@ -54,8 +53,8 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-content1 antialiased p-4">
       {/* Background decoration */}
-      <div className="absolute inset-0 z-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-      <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-primary/20 opacity-20 blur-[100px]"></div>
+      <div className="absolute inset-0 z-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
+      <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-primary/20 opacity-20 blur-[100px]" />
 
       <Card className="w-full max-w-sm z-10 shadow-large bg-background/60 backdrop-blur-md border border-white/20">
         <CardHeader className="flex flex-col gap-3 items-center pt-8 pb-4">
@@ -74,9 +73,9 @@ export default function LoginPage() {
           {error && (
             <div className="mb-6">
               <Alert
+                className="text-small"
                 color="danger"
                 title="Login Failed"
-                className="text-small"
                 variant="faded"
               >
                 {error}
@@ -84,34 +83,38 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="flex flex-col gap-5">
+          <form className="flex flex-col gap-5" onSubmit={handleLogin}>
             <Input
-              label="Username"
-              placeholder="Enter your username"
-              value={username}
-              onValueChange={setUsername}
               isRequired
-              variant="bordered"
-              labelPlacement="outside"
-              startContent={
-                <User className="text-2xl text-default-400 pointer-events-none flex-shrink-0" />
-              }
               classNames={{
                 label: "text-small font-medium text-default-700",
                 inputWrapper:
                   "bg-default-100/50 hover:bg-default-200/50 border-default-200 data-[hover=true]:border-default-400 group-data-[focus=true]:border-primary",
               }}
+              label="Username"
+              labelPlacement="outside"
+              placeholder="Enter your username"
+              startContent={
+                <User className="text-2xl text-default-400 pointer-events-none flex-shrink-0" />
+              }
+              value={username}
+              variant="bordered"
+              onValueChange={setUsername}
             />
 
             <Input
-              label="Password"
-              placeholder="Enter your password"
+              isRequired
+              classNames={{
+                label: "text-small font-medium text-default-700",
+                inputWrapper:
+                  "bg-default-100/50 hover:bg-default-200/50 border-default-200 data-[hover=true]:border-default-400 group-data-[focus=true]:border-primary",
+              }}
               endContent={
                 <button
+                  aria-label="toggle password visibility"
                   className="focus:outline-none"
                   type="button"
                   onClick={toggleVisibility}
-                  aria-label="toggle password visibility"
                 >
                   {isVisible ? (
                     <EyeOff className="text-2xl text-default-400 pointer-events-none" />
@@ -120,29 +123,25 @@ export default function LoginPage() {
                   )}
                 </button>
               }
-              type={isVisible ? "text" : "password"}
-              value={password}
-              onValueChange={setPassword}
-              isRequired
-              variant="bordered"
+              label="Password"
               labelPlacement="outside"
+              placeholder="Enter your password"
               startContent={
                 <Lock className="text-2xl text-default-400 pointer-events-none flex-shrink-0" />
               }
-              classNames={{
-                label: "text-small font-medium text-default-700",
-                inputWrapper:
-                  "bg-default-100/50 hover:bg-default-200/50 border-default-200 data-[hover=true]:border-default-400 group-data-[focus=true]:border-primary",
-              }}
+              type={isVisible ? "text" : "password"}
+              value={password}
+              variant="bordered"
+              onValueChange={setPassword}
             />
 
             <Button
-              type="submit"
-              color="primary"
               fullWidth
-              isLoading={loading}
               className="mt-2 font-medium shadow-lg shadow-primary/40"
+              color="primary"
+              isLoading={loading}
               size="lg"
+              type="submit"
             >
               LogIn
             </Button>

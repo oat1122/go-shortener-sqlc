@@ -178,6 +178,16 @@ func (q *Queries) DeletePost(ctx context.Context, id string) error {
 	return err
 }
 
+const deleteTag = `-- name: DeleteTag :exec
+DELETE FROM tags
+WHERE id = ?
+`
+
+func (q *Queries) DeleteTag(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteTag, id)
+	return err
+}
+
 const getCategory = `-- name: GetCategory :one
 SELECT id, name, slug FROM categories
 WHERE id = ? LIMIT 1
@@ -674,6 +684,23 @@ type UpdatePostViewsParams struct {
 
 func (q *Queries) UpdatePostViews(ctx context.Context, arg UpdatePostViewsParams) error {
 	_, err := q.db.ExecContext(ctx, updatePostViews, arg.Views, arg.ID)
+	return err
+}
+
+const updateTag = `-- name: UpdateTag :exec
+UPDATE tags
+SET name = ?, slug = ?
+WHERE id = ?
+`
+
+type UpdateTagParams struct {
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+	ID   string `json:"id"`
+}
+
+func (q *Queries) UpdateTag(ctx context.Context, arg UpdateTagParams) error {
+	_, err := q.db.ExecContext(ctx, updateTag, arg.Name, arg.Slug, arg.ID)
 	return err
 }
 

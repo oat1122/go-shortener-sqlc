@@ -20,12 +20,16 @@ declare module "@react-types/shared" {
   }
 }
 
+import QueryProvider from "@/components/providers/QueryProvider";
+
 export function Providers({ children, themeProps }: ProvidersProps) {
   const router = useRouter();
 
   return (
     <HeroUIProvider navigate={router.push}>
-      <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>
+      <NextThemesProvider {...themeProps}>
+        <QueryProvider>{children}</QueryProvider>
+      </NextThemesProvider>
     </HeroUIProvider>
   );
 }

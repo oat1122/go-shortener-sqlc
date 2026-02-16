@@ -66,6 +66,33 @@ func (s *BlogService) ListTags(ctx context.Context) ([]db.Tag, error) {
 	return s.q.ListTags(ctx)
 }
 
+func (s *BlogService) CreateTag(ctx context.Context, name, slug string) error {
+	id := uuid.New().String()
+	if slug == "" {
+		slug = utils.MakeSlug(name)
+	}
+	return s.q.CreateTag(ctx, db.CreateTagParams{
+		ID:   id,
+		Name: name,
+		Slug: slug,
+	})
+}
+
+func (s *BlogService) UpdateTag(ctx context.Context, id, name, slug string) error {
+	if slug == "" {
+		slug = utils.MakeSlug(name)
+	}
+	return s.q.UpdateTag(ctx, db.UpdateTagParams{
+		ID:   id,
+		Name: name,
+		Slug: slug,
+	})
+}
+
+func (s *BlogService) DeleteTag(ctx context.Context, id string) error {
+	return s.q.DeleteTag(ctx, id)
+}
+
 // EnsureTags takes a list of tag names, checks if they exist, creates them if not,
 // and returns a list of Tag IDs.
 func (s *BlogService) EnsureTags(ctx context.Context, tagNames []string) ([]string, error) {

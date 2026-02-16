@@ -95,6 +95,53 @@ func (h *BlogHandler) ListTags(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(tags)
 }
 
+func (h *BlogHandler) CreateTag(w http.ResponseWriter, r *http.Request) {
+	var req CreateCategoryRequest // Using same structure as Category for now: name, slug
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.Name == "" {
+		http.Error(w, "Name is required", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.Service.CreateTag(r.Context(), req.Name, req.Slug); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *BlogHandler) UpdateTag(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var req CreateCategoryRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.Service.UpdateTag(r.Context(), id, req.Name, req.Slug); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *BlogHandler) DeleteTag(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if err := h.Service.DeleteTag(r.Context(), id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+
+
 // --- Posts ---
 
 type CreatePostRequest struct {

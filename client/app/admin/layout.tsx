@@ -23,6 +23,7 @@ export default function AdminLayout({
       });
       router.push("/login"); // Redirect to login page
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error("Logout failed", error);
     }
   };
@@ -48,15 +49,16 @@ export default function AdminLayout({
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
+
             return (
               <Link
                 key={item.href}
-                href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                   isActive
                     ? "bg-primary/10 text-primary font-medium"
                     : "text-default-600 hover:bg-default-100"
                 }`}
+                href={item.href}
               >
                 {item.icon}
                 <span>{item.name}</span>
@@ -65,9 +67,9 @@ export default function AdminLayout({
           })}
           <Divider className="my-2" />
           <Link
+            className="flex items-center gap-3 px-4 py-3 rounded-lg text-default-600 hover:bg-default-100 transition-colors"
             href="/blog"
             target="_blank"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-default-600 hover:bg-default-100 transition-colors"
           >
             <Globe size={20} />
             <span>View Site</span>
@@ -76,10 +78,10 @@ export default function AdminLayout({
 
         <div className="p-4 border-t border-divider">
           <Button
-            color="danger"
-            variant="flat"
             fullWidth
+            color="danger"
             startContent={<LogOut size={18} />}
+            variant="flat"
             onPress={handleLogout}
           >
             Log Out

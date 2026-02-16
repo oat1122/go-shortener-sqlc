@@ -4,8 +4,9 @@ import React from "react";
 import Link from "next/link";
 import { Card, CardBody, CardFooter } from "@heroui/card";
 import { Image } from "@heroui/image";
-import { Post } from "@/types/blog";
 import { Calendar, Eye } from "lucide-react";
+
+import { Post } from "@/types/blog";
 
 interface BlogCardProps {
   post: Post;
@@ -14,6 +15,7 @@ interface BlogCardProps {
 export const BlogCard: React.FC<BlogCardProps> = ({ post }) => {
   const formatDate = (dateString?: string) => {
     if (!dateString) return "";
+
     return new Date(dateString).toLocaleDateString("th-TH", {
       year: "numeric",
       month: "long",
@@ -23,22 +25,22 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post }) => {
 
   return (
     <Card
-      shadow="sm"
-      className="h-full hover:scale-[1.02] transition-transform"
       isPressable
+      className="h-full hover:scale-[1.02] transition-transform"
+      shadow="sm"
     >
-      <Link href={`/blog/${post.slug}`} className="w-full h-full">
+      <Link className="w-full h-full" href={`/blog/${post.slug}`}>
         <CardBody className="overflow-visible p-0">
           <Image
-            shadow="sm"
-            radius="lg"
-            width="100%"
             alt={post.title}
             className="w-full object-cover h-[200px]"
+            radius="lg"
+            shadow="sm"
             src={
               post.featured_image ||
               "https://images.unsplash.com/photo-1499750310159-57f0f294794c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
             }
+            width="100%"
           />
         </CardBody>
         <CardFooter className="text-small justify-between flex-col items-start gap-2">

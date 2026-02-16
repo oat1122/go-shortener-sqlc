@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   Table,
   TableHeader,
@@ -14,8 +14,9 @@ import { Chip } from "@heroui/chip";
 import { Tooltip } from "@heroui/tooltip";
 import { Plus, Edit, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
+
 import { Post } from "@/types/blog";
-import { useRouter } from "next/navigation";
+import { usePosts, useDeletePost } from "@/hooks/usePosts";
 
 const statusColorMap: Record<string, "success" | "warning" | "default"> = {
   published: "success",
@@ -24,51 +25,17 @@ const statusColorMap: Record<string, "success" | "warning" | "default"> = {
 };
 
 export default function AdminPostsPage() {
-  const router = useRouter();
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchPosts();
-  }, []);
-
-  const fetchPosts = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/posts`,
-        {
-          credentials: "include",
-        },
-      );
-      if (res.ok) {
-        const data = await res.json();
-        setPosts(data || []);
-      }
-    } catch (error) {
-      console.error("Failed to fetch posts", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: posts = [], isLoading } = usePosts();
+  const deleteMutation = useDeletePost();
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this post?")) return;
-
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/posts/${id}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        },
-      );
-      if (res.ok) {
-        setPosts(posts.filter((post) => post.id !== id));
-      } else {
-        alert("Failed to delete post");
-      }
+      await deleteMutation.mutateAsync(id);
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error("Error deleting post", error);
+      alert("Failed to delete post");
     }
   };
 
@@ -102,23 +69,27 @@ export default function AdminPostsPage() {
             <div className="relative flex items-center gap-2">
               <Tooltip content="View">
                 <Link href={`/blog/${post.slug}`} target="_blank">
-                  <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
-                    <Eye size={18} />
-                  </span>
+                  <Button isIconOnly size="sm" variant="light">
+                    <Eye className="text-default-400" size={18} />
+                  </Button>
                 </Link>
               </Tooltip>
               <Tooltip content="Edit">
-                <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
-                  <Edit size={18} />
-                </span>
+                <Link href={`/admin/posts/${post.id}/edit`}>
+                  <Button isIconOnly size="sm" variant="light">
+                    <Edit className="text-default-400" size={18} />
+                  </Button>
+                </Link>
               </Tooltip>
               <Tooltip color="danger" content="Delete">
-                <span
-                  className="text-lg text-danger cursor-pointer active:opacity-50"
-                  onClick={() => handleDelete(post.id)}
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant="light"
+                  onPress={() => handleDelete(post.id)}
                 >
-                  <Trash2 size={18} />
-                </span>
+                  <Trash2 className="text-danger" size={18} />
+                </Button>
               </Tooltip>
             </div>
           );
@@ -147,10 +118,10 @@ export default function AdminPostsPage() {
           <TableColumn key="actions">ACTIONS</TableColumn>
         </TableHeader>
         <TableBody
-          items={posts}
-          isLoading={loading}
-          loadingContent={<div>Loading...</div>}
           emptyContent={"No posts found"}
+          isLoading={isLoading}
+          items={posts}
+          loadingContent={<div>Loading...</div>}
         >
           {(item) => (
             <TableRow key={item.id}>

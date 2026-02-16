@@ -70,6 +70,15 @@ WHERE name = ? LIMIT 1;
 SELECT * FROM tags
 ORDER BY name;
 
+-- name: UpdateTag :exec
+UPDATE tags
+SET name = ?, slug = ?
+WHERE id = ?;
+
+-- name: DeleteTag :exec
+DELETE FROM tags
+WHERE id = ?;
+
 -- Posts
 
 -- name: CreatePost :exec

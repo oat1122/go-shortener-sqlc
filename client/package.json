@@ -53,10 +53,13 @@
     "@react-aria/ssr": "3.9.10",
     "@react-aria/visually-hidden": "3.8.29",
     "@tailwindcss/typography": "^0.5.19",
+    "@tanstack/react-query": "^5.90.21",
+    "@tanstack/react-query-devtools": "^5.91.3",
     "@tiptap/extension-image": "^3.19.0",
     "@tiptap/extension-link": "^3.19.0",
     "@tiptap/react": "^3.19.0",
     "@tiptap/starter-kit": "^3.19.0",
+    "axios": "^1.13.5",
     "clsx": "2.1.1",
     "framer-motion": "11.18.2",
     "intl-messageformat": "10.7.16",
@@ -64,7 +67,8 @@
     "next": "15.5.9",
     "next-themes": "0.4.6",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@eslint/compat": "^2.0.2",

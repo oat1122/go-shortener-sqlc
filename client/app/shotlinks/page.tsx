@@ -6,33 +6,29 @@ import { Input } from "@heroui/input";
 import { Card, CardBody } from "@heroui/card";
 import { Copy, Check, Link as LinkIcon, AlertCircle } from "lucide-react";
 
-import { api } from "@/lib/api";
+import { useShortenUrl } from "@/hooks/useShortener";
 
 export default function ShortenerPage() {
   const [url, setUrl] = useState("");
   const [shortUrl, setShortUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const shortenMutation = useShortenUrl();
 
   const handleShorten = async () => {
     if (!url) return;
 
-    setLoading(true);
     setShortUrl(null);
-    setError(null);
     setCopied(false);
 
     try {
-      const data = await api.shorten(url);
+      const data = await shortenMutation.mutateAsync(url);
       const origin =
         typeof window !== "undefined" ? window.location.origin : "";
 
       setShortUrl(`${origin}/${data.short_code}`);
-    } catch (err: any) {
-      setError(err.message || "An unexpected error occurred");
-    } finally {
-      setLoading(false);
+    } catch {
+      // Error handled by mutation state, can add toast if needed
     }
   };
 
@@ -75,18 +71,21 @@ export default function ShortenerPage() {
               <Button
                 className="font-semibold bg-gradient-to-r from-blue-600 to-violet-600 shadow-lg shadow-blue-500/30"
                 color="primary"
-                isLoading={loading}
+                isLoading={shortenMutation.isPending}
                 size="lg"
                 onPress={handleShorten}
               >
-                {loading ? "Shortening..." : "Shorten URL"}
+                {shortenMutation.isPending ? "Shortening..." : "Shorten URL"}
               </Button>
             </div>
 
-            {error && (
+            {shortenMutation.isError && (
               <div className="p-4 bg-danger-50 dark:bg-danger-900/20 text-danger rounded-xl text-sm border border-danger-200 dark:border-danger-800 flex items-start gap-2">
                 <AlertCircle className="w-5 h-5 shrink-0" />
-                <span>{error}</span>
+                <span>
+                  {shortenMutation.error?.message ||
+                    "An unexpected error occurred"}
+                </span>
               </div>
             )}
 

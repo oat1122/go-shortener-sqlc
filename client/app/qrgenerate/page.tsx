@@ -17,14 +17,16 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 
 import { useDebounce } from "@/hooks/useDebounce";
-import { api } from "@/lib/api";
+import { useShortenUrl } from "@/hooks/useShortener";
+import { useGenerateQR } from "@/hooks/useQRCode";
 
 export default function QrGeneratePage() {
   const [longUrl, setLongUrl] = useState("");
   const [shortCode, setShortCode] = useState<string | null>(null);
+
+  // We'll manage blob URL separately to handle revoke
   const [qrBlobUrl, setQrBlobUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoSize, setLogoSize] = useState(100);
   const [borderRadius, setBorderRadius] = useState(0);
@@ -34,6 +36,7 @@ export default function QrGeneratePage() {
   const [gradientStart, setGradientStart] = useState("#FF0000");
   const [gradientEnd, setGradientEnd] = useState("#0000FF");
 
+  // Debounce inputs for QR Query
   const debouncedLogoSize = useDebounce(logoSize, 500);
   const debouncedBorderRadius = useDebounce(borderRadius, 500);
   const debouncedFgColor = useDebounce(fgColor, 500);
@@ -42,52 +45,40 @@ export default function QrGeneratePage() {
   const debouncedGradientEnd = useDebounce(gradientEnd, 500);
   const debouncedUseGradient = useDebounce(useGradient, 100);
 
-  // Auto-regenerate QR code when slider values or colors change (debounced)
-  useEffect(() => {
-    if (shortCode) {
-      const updateQR = async () => {
-        try {
-          // Silent update - don't set loading state to avoid flickering
-          const options: any = {
-            logoSize: debouncedLogoSize,
-            borderRadius: debouncedBorderRadius,
-            bgColor: debouncedBgColor,
-          };
+  const shortenMutation = useShortenUrl();
 
-          if (debouncedUseGradient) {
-            options.gradientStart = debouncedGradientStart;
-            options.gradientEnd = debouncedGradientEnd;
-          } else {
-            options.fgColor = debouncedFgColor;
-          }
+  // Prepare options for QR Hook
+  const qrOptions = {
+    logoSize: debouncedLogoSize,
+    borderRadius: debouncedBorderRadius,
+    bgColor: debouncedBgColor,
+    fgColor: !debouncedUseGradient ? debouncedFgColor : undefined,
+    gradientStart: debouncedUseGradient ? debouncedGradientStart : undefined,
+    gradientEnd: debouncedUseGradient ? debouncedGradientEnd : undefined,
+  };
 
-          const qrBlob = await api.generateQR(
-            shortCode,
-            logoFile || undefined,
-            options,
-          );
-          const url = URL.createObjectURL(qrBlob);
-
-          setQrBlobUrl(url);
-        } catch (err) {
-          // eslint-disable-next-line no-console
-          console.error("Failed to update QR code:", err);
-        }
-      };
-
-      updateQR();
-    }
-  }, [
-    debouncedLogoSize,
-    debouncedBorderRadius,
-    debouncedFgColor,
-    debouncedBgColor,
-    debouncedGradientStart,
-    debouncedGradientEnd,
-    debouncedUseGradient,
+  // QR Generation Hook (Auto-fetches when shortCode is present)
+  // We use `shortCode` as the trigger.
+  const { data: qrBlob, isLoading: isQrLoading } = useGenerateQR(
     shortCode,
     logoFile,
-  ]);
+    qrOptions,
+  );
+
+  // Update Blob URL when data changes
+  useEffect(() => {
+    if (qrBlob) {
+      const url = URL.createObjectURL(qrBlob);
+      setQrBlobUrl(url);
+
+      // Cleanup
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    }
+    // If shortCode is cleared, we should clear blob too?
+    // Handled by manual clear
+  }, [qrBlob]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -107,43 +98,15 @@ export default function QrGeneratePage() {
   const handleGenerate = async () => {
     if (!longUrl) return;
 
-    setLoading(true);
-    setError(null);
-    setQrBlobUrl(null);
     setShortCode(null);
+    setQrBlobUrl(null);
 
     try {
-      // 1. Shorten URL
-      const shortenRes = await api.shorten(longUrl);
-
-      setShortCode(shortenRes.short_code);
-
-      const options: any = {
-        logoSize,
-        borderRadius,
-        bgColor,
-      };
-
-      if (useGradient) {
-        options.gradientStart = gradientStart;
-        options.gradientEnd = gradientEnd;
-      } else {
-        options.fgColor = fgColor;
-      }
-
-      // 2. Generate QR with Logo
-      const qrBlob = await api.generateQR(
-        shortenRes.short_code,
-        logoFile || undefined,
-        options,
-      );
-      const url = URL.createObjectURL(qrBlob);
-
-      setQrBlobUrl(url);
-    } catch (err: any) {
-      setError(err.message || "เกิดข้อผิดพลาดในการสร้าง QR Code");
-    } finally {
-      setLoading(false);
+      const data = await shortenMutation.mutateAsync(longUrl);
+      setShortCode(data.short_code);
+      // Once shortCode is set, useGenerateQR will run automatically
+    } catch {
+      // Error handled by mutation state
     }
   };
 
@@ -158,6 +121,8 @@ export default function QrGeneratePage() {
       document.body.removeChild(a);
     }
   };
+
+  const loading = shortenMutation.isPending || (!!shortCode && isQrLoading);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
@@ -410,9 +375,10 @@ export default function QrGeneratePage() {
                 {loading ? "กำลังสร้าง..." : "สร้าง QR Code"}
               </Button>
 
-              {error && (
+              {shortenMutation.isError && (
                 <div className="p-3 bg-danger-50 dark:bg-danger-900/20 text-danger rounded-lg text-sm text-center">
-                  {error}
+                  {shortenMutation.error?.message ||
+                    "เกิดข้อผิดพลาดในการสร้าง QR Code"}
                 </div>
               )}
             </CardBody>
@@ -474,6 +440,7 @@ export default function QrGeneratePage() {
                       onPress={() => {
                         setQrBlobUrl(null);
                         setLongUrl("");
+                        setShortCode(null);
                         setLogoFile(null);
                       }}
                     >
