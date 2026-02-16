@@ -10,10 +10,13 @@ interface PageProps {
 
 async function getPost(slug: string): Promise<Post | null> {
   try {
-    const res = await fetch(`http://localhost:8080/api/blog/${slug}`, {
-      next: { revalidate: 60 },
-      cache: "no-store",
-    });
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/blog/${slug}`,
+      {
+        next: { revalidate: 60 },
+        cache: "no-store",
+      },
+    );
 
     if (!res.ok) {
       if (res.status === 404) return null;

@@ -136,3 +136,21 @@ WHERE post_id = ?;
 SELECT t.* FROM tags t
 JOIN post_tags pt ON t.id = pt.tag_id
 WHERE pt.post_id = ?;
+
+-- Auth Queries
+
+-- name: CreateUser :exec
+INSERT INTO users (
+  id, username, password_hash, role
+) VALUES (
+  ?, ?, ?, ?
+);
+
+-- name: GetUserByUsername :one
+SELECT * FROM users
+WHERE username = ? LIMIT 1;
+
+-- name: UpdateUserPassword :exec
+UPDATE users
+SET password_hash = ?
+WHERE username = ?;

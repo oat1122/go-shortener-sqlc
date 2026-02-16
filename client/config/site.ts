@@ -20,39 +20,27 @@ export const siteConfig = {
       label: "Blog",
       href: "/blog",
     },
+    {
+      label: "Login",
+      href: "/login",
+    },
   ],
   navMenuItems: [
     {
-      label: "Profile",
-      href: "/profile",
+      label: "Home",
+      href: "/",
     },
     {
-      label: "Dashboard",
-      href: "/dashboard",
+      label: "Shotlinks",
+      href: "/shotlinks",
     },
     {
-      label: "Projects",
-      href: "/projects",
+      label: "QR Generate",
+      href: "/qrgenerate",
     },
     {
-      label: "Team",
-      href: "/team",
-    },
-    {
-      label: "Calendar",
-      href: "/calendar",
-    },
-    {
-      label: "Settings",
-      href: "/settings",
-    },
-    {
-      label: "Help & Feedback",
-      href: "/help-feedback",
-    },
-    {
-      label: "Logout",
-      href: "/logout",
+      label: "Blog",
+      href: "/blog",
     },
   ],
   links: {

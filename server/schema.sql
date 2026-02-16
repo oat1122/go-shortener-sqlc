@@ -47,3 +47,14 @@ CREATE TABLE post_tags (
 );
 
 CREATE INDEX idx_posts_status_date ON posts (status, created_at);
+
+-- Auth System
+
+CREATE TABLE users (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  username VARCHAR(255) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  role VARCHAR(50) NOT NULL DEFAULT 'admin',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

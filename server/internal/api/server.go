@@ -13,6 +13,7 @@ type Server struct {
 	URLHandler  *handler.URLHandler
 	QRHandler   *handler.QRHandler
 	BlogHandler *handler.BlogHandler
+	AuthHandler *handler.AuthHandler
 }
 
 func NewServer(conn *sql.DB, cfg *config.Config) *Server {
@@ -28,11 +29,13 @@ func NewServer(conn *sql.DB, cfg *config.Config) *Server {
 	urlHandler := handler.NewURLHandler(urlService)
 	qrHandler := handler.NewQRHandler(qrService)
 	blogHandler := handler.NewBlogHandler(blogService)
+	authHandler := handler.NewAuthHandler(queries)
 
 	return &Server{
 		Config:      cfg,
 		URLHandler:  urlHandler,
 		QRHandler:   qrHandler,
 		BlogHandler: blogHandler,
+		AuthHandler: authHandler,
 	}
 }

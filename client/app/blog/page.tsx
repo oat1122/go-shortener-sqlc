@@ -18,7 +18,7 @@ async function getPosts(): Promise<Post[]> {
 
     // Note: This requires the Go server to be accessible.
     // If running in Docker compose, use service name. If local, use localhost.
-    const res = await fetch("http://localhost:8080/api/blog", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/blog`, {
       next: { revalidate: 60 },
     });
 

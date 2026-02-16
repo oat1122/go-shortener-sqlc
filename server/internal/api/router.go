@@ -1,6 +1,8 @@
 package api
 
 import (
+	"fmt"
+	"go-shortener-sqlc/internal/auth"
 	"net/http"
 	"time"
 
@@ -37,6 +39,11 @@ func (s *Server) Routes() http.Handler {
 
 	// Blog Routes
 	r.Route("/api", func(r chi.Router) {
+		// Auth Routes
+		r.Post("/auth/login", s.AuthHandler.Login)
+		r.Post("/auth/logout", s.AuthHandler.Logout)
+		r.Get("/auth/me", s.AuthHandler.Me)
+
 		// Public Blog Endpoints
 		r.Get("/blog", s.BlogHandler.ListPublishedPosts)
 		r.Get("/blog/{slug}", s.BlogHandler.GetPostBySlug)
@@ -45,17 +52,48 @@ func (s *Server) Routes() http.Handler {
 		r.Get("/categories", s.BlogHandler.ListCategories)
 		r.Get("/tags", s.BlogHandler.ListTags)
 
-		// Admin Endpoints (Todo: Add Auth Middleware)
-		r.Post("/categories", s.BlogHandler.CreateCategory)
-		r.Put("/categories/{id}", s.BlogHandler.UpdateCategory)
-		r.Delete("/categories/{id}", s.BlogHandler.DeleteCategory)
+		// Admin Endpoints
+		r.Group(func(r chi.Router) {
+			r.Use(AdminOnlyMiddleware) // Protect these routes
+			
+			r.Post("/categories", s.BlogHandler.CreateCategory)
+			r.Put("/categories/{id}", s.BlogHandler.UpdateCategory)
+			r.Delete("/categories/{id}", s.BlogHandler.DeleteCategory)
 
-		r.Get("/admin/posts", s.BlogHandler.ListPosts)
-		r.Post("/admin/posts", s.BlogHandler.CreatePost)
-		r.Put("/admin/posts/{id}", s.BlogHandler.UpdatePost)
-		r.Patch("/admin/posts/{id}/views", s.BlogHandler.UpdatePostViews)
-		r.Delete("/admin/posts/{id}", s.BlogHandler.DeletePost)
+			r.Get("/admin/posts", s.BlogHandler.ListPosts)
+			r.Post("/admin/posts", s.BlogHandler.CreatePost)
+			r.Put("/admin/posts/{id}", s.BlogHandler.UpdatePost)
+			r.Patch("/admin/posts/{id}/views", s.BlogHandler.UpdatePostViews)
+			r.Delete("/admin/posts/{id}", s.BlogHandler.DeletePost)
+		})
 	})
 
 	return r
 }
+
+func AdminOnlyMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("auth_token")
+		if err != nil {
+			fmt.Printf("Auth Middleware Error: No cookie found. Error: %v\n Headers: %v\n", err, r.Header)
+			http.Error(w, "Unauthorized - No Cookie", http.StatusUnauthorized)
+			return
+		}
+
+		claims, err := auth.ValidateToken(cookie.Value)
+		if err != nil {
+			fmt.Printf("Auth Middleware Error: Invalid token. Error: %v\n", err)
+			http.Error(w, "Unauthorized - Invalid Token", http.StatusUnauthorized)
+			return
+		}
+
+		if claims.Role != "admin" {
+			fmt.Printf("Auth Middleware Error: Forbidden access. User Role: %s\n", claims.Role)
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
