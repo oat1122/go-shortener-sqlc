@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -17,6 +16,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { useDebounce } from "@/hooks/useDebounce";
 import { api } from "@/lib/api";
 
 export default function QrGeneratePage() {
@@ -28,29 +28,66 @@ export default function QrGeneratePage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoSize, setLogoSize] = useState(100);
   const [borderRadius, setBorderRadius] = useState(0);
+  const [fgColor, setFgColor] = useState("#000000");
+  const [bgColor, setBgColor] = useState("#FFFFFF");
+  const [useGradient, setUseGradient] = useState(false);
+  const [gradientStart, setGradientStart] = useState("#FF0000");
+  const [gradientEnd, setGradientEnd] = useState("#0000FF");
 
   const debouncedLogoSize = useDebounce(logoSize, 500);
   const debouncedBorderRadius = useDebounce(borderRadius, 500);
+  const debouncedFgColor = useDebounce(fgColor, 500);
+  const debouncedBgColor = useDebounce(bgColor, 500);
+  const debouncedGradientStart = useDebounce(gradientStart, 500);
+  const debouncedGradientEnd = useDebounce(gradientEnd, 500);
+  const debouncedUseGradient = useDebounce(useGradient, 100);
 
-  // Auto-regenerate QR code when slider values change (debounced)
+  // Auto-regenerate QR code when slider values or colors change (debounced)
   useEffect(() => {
-    if (shortCode && logoFile) {
+    if (shortCode) {
       const updateQR = async () => {
         try {
           // Silent update - don't set loading state to avoid flickering
-          const qrBlob = await api.generateQR(shortCode, logoFile, {
+          const options: any = {
             logoSize: debouncedLogoSize,
             borderRadius: debouncedBorderRadius,
-          });
+            bgColor: debouncedBgColor,
+          };
+
+          if (debouncedUseGradient) {
+            options.gradientStart = debouncedGradientStart;
+            options.gradientEnd = debouncedGradientEnd;
+          } else {
+            options.fgColor = debouncedFgColor;
+          }
+
+          const qrBlob = await api.generateQR(
+            shortCode,
+            logoFile || undefined,
+            options,
+          );
           const url = URL.createObjectURL(qrBlob);
+
           setQrBlobUrl(url);
         } catch (err) {
+          // eslint-disable-next-line no-console
           console.error("Failed to update QR code:", err);
         }
       };
+
       updateQR();
     }
-  }, [debouncedLogoSize, debouncedBorderRadius, shortCode, logoFile]);
+  }, [
+    debouncedLogoSize,
+    debouncedBorderRadius,
+    debouncedFgColor,
+    debouncedBgColor,
+    debouncedGradientStart,
+    debouncedGradientEnd,
+    debouncedUseGradient,
+    shortCode,
+    logoFile,
+  ]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -81,16 +118,24 @@ export default function QrGeneratePage() {
 
       setShortCode(shortenRes.short_code);
 
+      const options: any = {
+        logoSize,
+        borderRadius,
+        bgColor,
+      };
+
+      if (useGradient) {
+        options.gradientStart = gradientStart;
+        options.gradientEnd = gradientEnd;
+      } else {
+        options.fgColor = fgColor;
+      }
+
       // 2. Generate QR with Logo
       const qrBlob = await api.generateQR(
         shortenRes.short_code,
         logoFile || undefined,
-        logoFile
-          ? {
-              logoSize,
-              borderRadius,
-            }
-          : undefined,
+        options,
       );
       const url = URL.createObjectURL(qrBlob);
 
@@ -143,6 +188,120 @@ export default function QrGeneratePage() {
                 variant="bordered"
                 onValueChange={setLongUrl}
               />
+
+              {/* Color Customization */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    หมวดสี (Color Mode)
+                  </span>
+                  <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+                    <button
+                      className={`px-3 py-1.5 text-sm rounded-md transition-all ${!useGradient ? "bg-white dark:bg-gray-700 shadow text-gray-900 dark:text-white font-medium" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"}`}
+                      type="button"
+                      onClick={() => setUseGradient(false)}
+                    >
+                      สีเดียว
+                    </button>
+                    <button
+                      className={`px-3 py-1.5 text-sm rounded-md transition-all ${useGradient ? "bg-white dark:bg-gray-700 shadow text-gray-900 dark:text-white font-medium" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"}`}
+                      type="button"
+                      onClick={() => setUseGradient(true)}
+                    >
+                      Gradient
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {useGradient ? (
+                    <>
+                      <div className="space-y-2">
+                        <label
+                          className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                          htmlFor="gradient-start"
+                        >
+                          สีเริ่มต้น (Top)
+                        </label>
+                        <div className="flex items-center gap-2 p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                          <input
+                            className="w-8 h-8 rounded cursor-pointer border-none p-0 bg-transparent"
+                            id="gradient-start"
+                            type="color"
+                            value={gradientStart}
+                            onChange={(e) => setGradientStart(e.target.value)}
+                          />
+                          <span className="text-sm text-gray-500 dark:text-gray-400 uppercase">
+                            {gradientStart}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label
+                          className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                          htmlFor="gradient-end"
+                        >
+                          สีสิ้นสุด (Bottom)
+                        </label>
+                        <div className="flex items-center gap-2 p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                          <input
+                            className="w-8 h-8 rounded cursor-pointer border-none p-0 bg-transparent"
+                            id="gradient-end"
+                            type="color"
+                            value={gradientEnd}
+                            onChange={(e) => setGradientEnd(e.target.value)}
+                          />
+                          <span className="text-sm text-gray-500 dark:text-gray-400 uppercase">
+                            {gradientEnd}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-2">
+                      <label
+                        className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                        htmlFor="fg-color"
+                      >
+                        สี QR Code
+                      </label>
+                      <div className="flex items-center gap-2 p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                        <input
+                          className="w-8 h-8 rounded cursor-pointer border-none p-0 bg-transparent"
+                          id="fg-color"
+                          type="color"
+                          value={fgColor}
+                          onChange={(e) => setFgColor(e.target.value)}
+                        />
+                        <span className="text-sm text-gray-500 dark:text-gray-400 uppercase">
+                          {fgColor}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <label
+                      className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                      htmlFor="bg-color"
+                    >
+                      สีพื้นหลัง
+                    </label>
+                    <div className="flex items-center gap-2 p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                      <input
+                        className="w-8 h-8 rounded cursor-pointer border-none p-0 bg-transparent"
+                        id="bg-color"
+                        type="color"
+                        value={bgColor}
+                        onChange={(e) => setBgColor(e.target.value)}
+                      />
+                      <span className="text-sm text-gray-500 dark:text-gray-400 uppercase">
+                        {bgColor}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               <div className="space-y-2">
                 <label
@@ -215,26 +374,26 @@ export default function QrGeneratePage() {
               {logoFile && (
                 <div className="space-y-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                   <Slider
+                    className="max-w-md"
+                    getValue={(v) => `${v}px`}
                     label="ขนาดโลโก้ (Logo Size)"
                     maxValue={240}
                     minValue={50}
                     size="sm"
                     step={10}
-                    getValue={(v) => `${v}px`}
                     value={logoSize}
                     onChange={(v) => setLogoSize(v as number)}
-                    className="max-w-md"
                   />
                   <Slider
+                    className="max-w-md"
+                    getValue={(v) => `${v}px`}
                     label="ความมนของขอบ (Border Radius)"
                     maxValue={100}
                     minValue={0}
                     size="sm"
                     step={5}
-                    getValue={(v) => `${v}px`}
                     value={borderRadius}
                     onChange={(v) => setBorderRadius(v as number)}
-                    className="max-w-md"
                   />
                 </div>
               )}

@@ -24,24 +24,24 @@ func Load() *Config {
 	}
 
 	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
+	// if port == "" {
+	// 	port = "8080"
+	// }
 
 	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		log.Fatal("DATABASE_URL must be set")
-	}
+	// if dbURL == "" {
+	// 	log.Fatal("DATABASE_URL must be set")
+	// }
 
 	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
-	if allowedOrigins == "" {
-		allowedOrigins = "http://localhost:3000" // Default for dev
-	}
+	// if allowedOrigins == "" {
+	// 	allowedOrigins = "http://localhost:3000" // Default for dev
+	// }
 
 	baseURL := os.Getenv("BASE_URL")
-	if baseURL == "" {
-		baseURL = "http://localhost:3000"
-	}
+	// if baseURL == "" {
+	// 	baseURL = "http://localhost:3000"
+	// }
 
 	return &Config{
 		Port:           port,

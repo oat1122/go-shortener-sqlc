@@ -44,7 +44,14 @@ export const api = {
   generateQR: async (
     code: string,
     logo?: File,
-    options?: { logoSize?: number; borderRadius?: number },
+    options?: {
+      logoSize?: number;
+      borderRadius?: number;
+      fgColor?: string;
+      bgColor?: string;
+      gradientStart?: string;
+      gradientEnd?: string;
+    },
   ): Promise<Blob> => {
     const formData = new FormData();
 
@@ -58,6 +65,22 @@ export const api = {
 
     if (options?.borderRadius !== undefined) {
       formData.append("border_radius", options.borderRadius.toString());
+    }
+
+    if (options?.fgColor) {
+      formData.append("fg_color", options.fgColor);
+    }
+
+    if (options?.bgColor) {
+      formData.append("bg_color", options.bgColor);
+    }
+
+    if (options?.gradientStart) {
+      formData.append("gradient_start", options.gradientStart);
+    }
+
+    if (options?.gradientEnd) {
+      formData.append("gradient_end", options.gradientEnd);
     }
 
     const res = await fetch(`${API_URL}/${code}/qr`, {

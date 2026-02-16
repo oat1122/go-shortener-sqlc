@@ -1,4 +1,4 @@
-package api
+package handler
 
 import (
 	"bytes"
@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"go-shortener-sqlc/internal/db"
+	"go-shortener-sqlc/internal/service"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/go-chi/chi/v5"
@@ -25,12 +26,10 @@ func TestShortenURL(t *testing.T) {
 	}
 	defer mockDB.Close()
 
-	// Create queries with mock db
+	// Create dependencies
 	queries := db.New(mockDB)
-	server := &Server{
-		Queries: queries,
-		DB:      mockDB,
-	}
+	urlService := service.NewURLService(queries)
+	handler := NewURLHandler(urlService)
 
 	tests := []struct {
 		name           string
@@ -103,7 +102,7 @@ func TestShortenURL(t *testing.T) {
 			req, _ := http.NewRequest("POST", "/shorten", bytes.NewBuffer(reqBody))
 			rr := httptest.NewRecorder()
 
-			server.ShortenURL(rr, req)
+			handler.ShortenURL(rr, req)
 
 			if rr.Code != tc.expectedStatus {
 				t.Errorf("handler returned wrong status code: got %v want %v",
@@ -126,10 +125,8 @@ func TestRedirectURL(t *testing.T) {
 	defer mockDB.Close()
 
 	queries := db.New(mockDB)
-	server := &Server{
-		Queries: queries,
-		DB:      mockDB,
-	}
+	urlService := service.NewURLService(queries)
+	handler := NewURLHandler(urlService)
 
 	tests := []struct {
 		name           string
@@ -186,7 +183,7 @@ func TestRedirectURL(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 
-			server.RedirectURL(rr, req)
+			handler.RedirectURL(rr, req)
 
 			if rr.Code != tc.expectedStatus {
 				t.Errorf("handler returned wrong status code: got %v want %v",
