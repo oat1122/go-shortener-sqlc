@@ -8,7 +8,110 @@ package db
 import (
 	"context"
 	"database/sql"
+	"time"
 )
+
+const addTagToPost = `-- name: AddTagToPost :exec
+
+INSERT INTO post_tags (post_id, tag_id)
+VALUES (?, ?)
+`
+
+type AddTagToPostParams struct {
+	PostID string `json:"post_id"`
+	TagID  string `json:"tag_id"`
+}
+
+// Post Tags
+func (q *Queries) AddTagToPost(ctx context.Context, arg AddTagToPostParams) error {
+	_, err := q.db.ExecContext(ctx, addTagToPost, arg.PostID, arg.TagID)
+	return err
+}
+
+const createCategory = `-- name: CreateCategory :exec
+
+
+INSERT INTO categories (
+  id, name, slug
+) VALUES (
+  ?, ?, ?
+)
+`
+
+type CreateCategoryParams struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
+// Blog Queries
+// Categories
+func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) error {
+	_, err := q.db.ExecContext(ctx, createCategory, arg.ID, arg.Name, arg.Slug)
+	return err
+}
+
+const createPost = `-- name: CreatePost :exec
+
+INSERT INTO posts (
+  id, title, slug, content, excerpt, meta_description, keywords, featured_image, status, category_id, published_at
+) VALUES (
+  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+)
+`
+
+type CreatePostParams struct {
+	ID              string         `json:"id"`
+	Title           string         `json:"title"`
+	Slug            string         `json:"slug"`
+	Content         string         `json:"content"`
+	Excerpt         sql.NullString `json:"excerpt"`
+	MetaDescription sql.NullString `json:"meta_description"`
+	Keywords        sql.NullString `json:"keywords"`
+	FeaturedImage   sql.NullString `json:"featured_image"`
+	Status          PostsStatus    `json:"status"`
+	CategoryID      sql.NullString `json:"category_id"`
+	PublishedAt     sql.NullTime   `json:"published_at"`
+}
+
+// Posts
+func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) error {
+	_, err := q.db.ExecContext(ctx, createPost,
+		arg.ID,
+		arg.Title,
+		arg.Slug,
+		arg.Content,
+		arg.Excerpt,
+		arg.MetaDescription,
+		arg.Keywords,
+		arg.FeaturedImage,
+		arg.Status,
+		arg.CategoryID,
+		arg.PublishedAt,
+	)
+	return err
+}
+
+const createTag = `-- name: CreateTag :exec
+
+INSERT INTO tags (
+  id, name, slug
+) VALUES (
+  ?, ?, ?
+)
+`
+
+type CreateTagParams struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
+// Tags
+func (q *Queries) CreateTag(ctx context.Context, arg CreateTagParams) error {
+	_, err := q.db.ExecContext(ctx, createTag, arg.ID, arg.Name, arg.Slug)
+	return err
+}
 
 const createURL = `-- name: CreateURL :execresult
 INSERT INTO urls (
@@ -26,6 +129,169 @@ type CreateURLParams struct {
 
 func (q *Queries) CreateURL(ctx context.Context, arg CreateURLParams) (sql.Result, error) {
 	return q.db.ExecContext(ctx, createURL, arg.ShortCode, arg.OriginalUrl, arg.UrlHash)
+}
+
+const deleteCategory = `-- name: DeleteCategory :exec
+DELETE FROM categories
+WHERE id = ?
+`
+
+func (q *Queries) DeleteCategory(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteCategory, id)
+	return err
+}
+
+const deletePost = `-- name: DeletePost :exec
+DELETE FROM posts
+WHERE id = ?
+`
+
+func (q *Queries) DeletePost(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deletePost, id)
+	return err
+}
+
+const getCategory = `-- name: GetCategory :one
+SELECT id, name, slug FROM categories
+WHERE id = ? LIMIT 1
+`
+
+func (q *Queries) GetCategory(ctx context.Context, id string) (Category, error) {
+	row := q.db.QueryRowContext(ctx, getCategory, id)
+	var i Category
+	err := row.Scan(&i.ID, &i.Name, &i.Slug)
+	return i, err
+}
+
+const getCategoryBySlug = `-- name: GetCategoryBySlug :one
+SELECT id, name, slug FROM categories
+WHERE slug = ? LIMIT 1
+`
+
+func (q *Queries) GetCategoryBySlug(ctx context.Context, slug string) (Category, error) {
+	row := q.db.QueryRowContext(ctx, getCategoryBySlug, slug)
+	var i Category
+	err := row.Scan(&i.ID, &i.Name, &i.Slug)
+	return i, err
+}
+
+const getPost = `-- name: GetPost :one
+SELECT id, title, slug, content, excerpt, meta_description, keywords, featured_image, status, views, category_id, published_at, created_at, updated_at FROM posts
+WHERE id = ? LIMIT 1
+`
+
+func (q *Queries) GetPost(ctx context.Context, id string) (Post, error) {
+	row := q.db.QueryRowContext(ctx, getPost, id)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Slug,
+		&i.Content,
+		&i.Excerpt,
+		&i.MetaDescription,
+		&i.Keywords,
+		&i.FeaturedImage,
+		&i.Status,
+		&i.Views,
+		&i.CategoryID,
+		&i.PublishedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getPostBySlug = `-- name: GetPostBySlug :one
+SELECT id, title, slug, content, excerpt, meta_description, keywords, featured_image, status, views, category_id, published_at, created_at, updated_at FROM posts
+WHERE slug = ? LIMIT 1
+`
+
+func (q *Queries) GetPostBySlug(ctx context.Context, slug string) (Post, error) {
+	row := q.db.QueryRowContext(ctx, getPostBySlug, slug)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Slug,
+		&i.Content,
+		&i.Excerpt,
+		&i.MetaDescription,
+		&i.Keywords,
+		&i.FeaturedImage,
+		&i.Status,
+		&i.Views,
+		&i.CategoryID,
+		&i.PublishedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getPostTags = `-- name: GetPostTags :many
+SELECT t.id, t.name, t.slug FROM tags t
+JOIN post_tags pt ON t.id = pt.tag_id
+WHERE pt.post_id = ?
+`
+
+func (q *Queries) GetPostTags(ctx context.Context, postID string) ([]Tag, error) {
+	rows, err := q.db.QueryContext(ctx, getPostTags, postID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Tag
+	for rows.Next() {
+		var i Tag
+		if err := rows.Scan(&i.ID, &i.Name, &i.Slug); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTag = `-- name: GetTag :one
+SELECT id, name, slug FROM tags
+WHERE id = ? LIMIT 1
+`
+
+func (q *Queries) GetTag(ctx context.Context, id string) (Tag, error) {
+	row := q.db.QueryRowContext(ctx, getTag, id)
+	var i Tag
+	err := row.Scan(&i.ID, &i.Name, &i.Slug)
+	return i, err
+}
+
+const getTagByName = `-- name: GetTagByName :one
+SELECT id, name, slug FROM tags
+WHERE name = ? LIMIT 1
+`
+
+func (q *Queries) GetTagByName(ctx context.Context, name string) (Tag, error) {
+	row := q.db.QueryRowContext(ctx, getTagByName, name)
+	var i Tag
+	err := row.Scan(&i.ID, &i.Name, &i.Slug)
+	return i, err
+}
+
+const getTagBySlug = `-- name: GetTagBySlug :one
+SELECT id, name, slug FROM tags
+WHERE slug = ? LIMIT 1
+`
+
+func (q *Queries) GetTagBySlug(ctx context.Context, slug string) (Tag, error) {
+	row := q.db.QueryRowContext(ctx, getTagBySlug, slug)
+	var i Tag
+	err := row.Scan(&i.ID, &i.Name, &i.Slug)
+	return i, err
 }
 
 const getURL = `-- name: GetURL :one
@@ -62,4 +328,305 @@ func (q *Queries) GetURLByHash(ctx context.Context, urlHash string) (Url, error)
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const incrementPostViews = `-- name: IncrementPostViews :exec
+UPDATE posts
+SET views = views + 1
+WHERE id = ?
+`
+
+func (q *Queries) IncrementPostViews(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, incrementPostViews, id)
+	return err
+}
+
+const listCategories = `-- name: ListCategories :many
+SELECT id, name, slug FROM categories
+ORDER BY name
+`
+
+func (q *Queries) ListCategories(ctx context.Context) ([]Category, error) {
+	rows, err := q.db.QueryContext(ctx, listCategories)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Category
+	for rows.Next() {
+		var i Category
+		if err := rows.Scan(&i.ID, &i.Name, &i.Slug); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPosts = `-- name: ListPosts :many
+SELECT id, title, slug, content, excerpt, meta_description, keywords, featured_image, status, views, category_id, published_at, created_at, updated_at FROM posts
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListPosts(ctx context.Context) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, listPosts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Post
+	for rows.Next() {
+		var i Post
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Slug,
+			&i.Content,
+			&i.Excerpt,
+			&i.MetaDescription,
+			&i.Keywords,
+			&i.FeaturedImage,
+			&i.Status,
+			&i.Views,
+			&i.CategoryID,
+			&i.PublishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPublishedPosts = `-- name: ListPublishedPosts :many
+SELECT id, title, slug, content, excerpt, meta_description, keywords, featured_image, status, views, category_id, published_at, created_at, updated_at FROM posts
+WHERE status = 'published'
+ORDER BY published_at DESC
+`
+
+func (q *Queries) ListPublishedPosts(ctx context.Context) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, listPublishedPosts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Post
+	for rows.Next() {
+		var i Post
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Slug,
+			&i.Content,
+			&i.Excerpt,
+			&i.MetaDescription,
+			&i.Keywords,
+			&i.FeaturedImage,
+			&i.Status,
+			&i.Views,
+			&i.CategoryID,
+			&i.PublishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPublishedPostsWithCategory = `-- name: ListPublishedPostsWithCategory :many
+SELECT p.id, p.title, p.slug, p.content, p.excerpt, p.meta_description, p.keywords, p.featured_image, p.status, p.views, p.category_id, p.published_at, p.created_at, p.updated_at, c.name AS category_name, c.slug AS category_slug
+FROM posts p
+LEFT JOIN categories c ON p.category_id = c.id
+WHERE p.status = 'published'
+ORDER BY p.published_at DESC
+`
+
+type ListPublishedPostsWithCategoryRow struct {
+	ID              string         `json:"id"`
+	Title           string         `json:"title"`
+	Slug            string         `json:"slug"`
+	Content         string         `json:"content"`
+	Excerpt         sql.NullString `json:"excerpt"`
+	MetaDescription sql.NullString `json:"meta_description"`
+	Keywords        sql.NullString `json:"keywords"`
+	FeaturedImage   sql.NullString `json:"featured_image"`
+	Status          PostsStatus    `json:"status"`
+	Views           uint32         `json:"views"`
+	CategoryID      sql.NullString `json:"category_id"`
+	PublishedAt     sql.NullTime   `json:"published_at"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+	CategoryName    sql.NullString `json:"category_name"`
+	CategorySlug    sql.NullString `json:"category_slug"`
+}
+
+func (q *Queries) ListPublishedPostsWithCategory(ctx context.Context) ([]ListPublishedPostsWithCategoryRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPublishedPostsWithCategory)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPublishedPostsWithCategoryRow
+	for rows.Next() {
+		var i ListPublishedPostsWithCategoryRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Slug,
+			&i.Content,
+			&i.Excerpt,
+			&i.MetaDescription,
+			&i.Keywords,
+			&i.FeaturedImage,
+			&i.Status,
+			&i.Views,
+			&i.CategoryID,
+			&i.PublishedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.CategoryName,
+			&i.CategorySlug,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTags = `-- name: ListTags :many
+SELECT id, name, slug FROM tags
+ORDER BY name
+`
+
+func (q *Queries) ListTags(ctx context.Context) ([]Tag, error) {
+	rows, err := q.db.QueryContext(ctx, listTags)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Tag
+	for rows.Next() {
+		var i Tag
+		if err := rows.Scan(&i.ID, &i.Name, &i.Slug); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const removeTagsFromPost = `-- name: RemoveTagsFromPost :exec
+DELETE FROM post_tags
+WHERE post_id = ?
+`
+
+func (q *Queries) RemoveTagsFromPost(ctx context.Context, postID string) error {
+	_, err := q.db.ExecContext(ctx, removeTagsFromPost, postID)
+	return err
+}
+
+const updateCategory = `-- name: UpdateCategory :exec
+UPDATE categories
+SET name = ?, slug = ?
+WHERE id = ?
+`
+
+type UpdateCategoryParams struct {
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+	ID   string `json:"id"`
+}
+
+func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) error {
+	_, err := q.db.ExecContext(ctx, updateCategory, arg.Name, arg.Slug, arg.ID)
+	return err
+}
+
+const updatePost = `-- name: UpdatePost :exec
+UPDATE posts
+SET title = ?, slug = ?, content = ?, excerpt = ?, meta_description = ?, keywords = ?, featured_image = ?, status = ?, category_id = ?, published_at = ?
+WHERE id = ?
+`
+
+type UpdatePostParams struct {
+	Title           string         `json:"title"`
+	Slug            string         `json:"slug"`
+	Content         string         `json:"content"`
+	Excerpt         sql.NullString `json:"excerpt"`
+	MetaDescription sql.NullString `json:"meta_description"`
+	Keywords        sql.NullString `json:"keywords"`
+	FeaturedImage   sql.NullString `json:"featured_image"`
+	Status          PostsStatus    `json:"status"`
+	CategoryID      sql.NullString `json:"category_id"`
+	PublishedAt     sql.NullTime   `json:"published_at"`
+	ID              string         `json:"id"`
+}
+
+func (q *Queries) UpdatePost(ctx context.Context, arg UpdatePostParams) error {
+	_, err := q.db.ExecContext(ctx, updatePost,
+		arg.Title,
+		arg.Slug,
+		arg.Content,
+		arg.Excerpt,
+		arg.MetaDescription,
+		arg.Keywords,
+		arg.FeaturedImage,
+		arg.Status,
+		arg.CategoryID,
+		arg.PublishedAt,
+		arg.ID,
+	)
+	return err
+}
+
+const updatePostViews = `-- name: UpdatePostViews :exec
+UPDATE posts
+SET views = ?
+WHERE id = ?
+`
+
+type UpdatePostViewsParams struct {
+	Views uint32 `json:"views"`
+	ID    string `json:"id"`
+}
+
+func (q *Queries) UpdatePostViews(ctx context.Context, arg UpdatePostViewsParams) error {
+	_, err := q.db.ExecContext(ctx, updatePostViews, arg.Views, arg.ID)
+	return err
 }

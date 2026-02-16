@@ -5,8 +5,88 @@
 package db
 
 import (
+	"database/sql"
+	"database/sql/driver"
+	"fmt"
 	"time"
 )
+
+type PostsStatus string
+
+const (
+	PostsStatusDraft     PostsStatus = "draft"
+	PostsStatusPublished PostsStatus = "published"
+	PostsStatusArchived  PostsStatus = "archived"
+)
+
+func (e *PostsStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = PostsStatus(s)
+	case string:
+		*e = PostsStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for PostsStatus: %T", src)
+	}
+	return nil
+}
+
+type NullPostsStatus struct {
+	PostsStatus PostsStatus `json:"posts_status"`
+	Valid       bool        `json:"valid"` // Valid is true if PostsStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullPostsStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.PostsStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.PostsStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullPostsStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.PostsStatus), nil
+}
+
+type Category struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
+type Post struct {
+	ID              string         `json:"id"`
+	Title           string         `json:"title"`
+	Slug            string         `json:"slug"`
+	Content         string         `json:"content"`
+	Excerpt         sql.NullString `json:"excerpt"`
+	MetaDescription sql.NullString `json:"meta_description"`
+	Keywords        sql.NullString `json:"keywords"`
+	FeaturedImage   sql.NullString `json:"featured_image"`
+	Status          PostsStatus    `json:"status"`
+	Views           uint32         `json:"views"`
+	CategoryID      sql.NullString `json:"category_id"`
+	PublishedAt     sql.NullTime   `json:"published_at"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+}
+
+type PostTag struct {
+	PostID string `json:"post_id"`
+	TagID  string `json:"tag_id"`
+}
+
+type Tag struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
 
 type Url struct {
 	ID          int32     `json:"id"`

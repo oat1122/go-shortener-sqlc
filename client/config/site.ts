@@ -16,6 +16,10 @@ export const siteConfig = {
       label: "QR Generate",
       href: "/qrgenerate",
     },
+    {
+      label: "Blog",
+      href: "/blog",
+    },
   ],
   navMenuItems: [
     {

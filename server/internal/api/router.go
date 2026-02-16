@@ -35,5 +35,27 @@ func (s *Server) Routes() http.Handler {
 	r.Get("/{code}", s.URLHandler.RedirectURL)
 	r.Post("/{code}/qr", s.QRHandler.GenerateQR)
 
+	// Blog Routes
+	r.Route("/api", func(r chi.Router) {
+		// Public Blog Endpoints
+		r.Get("/blog", s.BlogHandler.ListPublishedPosts)
+		r.Get("/blog/{slug}", s.BlogHandler.GetPostBySlug)
+		
+		// Categories & Tags (Public for filter)
+		r.Get("/categories", s.BlogHandler.ListCategories)
+		r.Get("/tags", s.BlogHandler.ListTags)
+
+		// Admin Endpoints (Todo: Add Auth Middleware)
+		r.Post("/categories", s.BlogHandler.CreateCategory)
+		r.Put("/categories/{id}", s.BlogHandler.UpdateCategory)
+		r.Delete("/categories/{id}", s.BlogHandler.DeleteCategory)
+
+		r.Get("/admin/posts", s.BlogHandler.ListPosts)
+		r.Post("/admin/posts", s.BlogHandler.CreatePost)
+		r.Put("/admin/posts/{id}", s.BlogHandler.UpdatePost)
+		r.Patch("/admin/posts/{id}/views", s.BlogHandler.UpdatePostViews)
+		r.Delete("/admin/posts/{id}", s.BlogHandler.DeletePost)
+	})
+
 	return r
 }

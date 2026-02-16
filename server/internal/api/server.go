@@ -10,8 +10,9 @@ import (
 
 type Server struct {
 	Config     *config.Config
-	URLHandler *handler.URLHandler
-	QRHandler  *handler.QRHandler
+	URLHandler  *handler.URLHandler
+	QRHandler   *handler.QRHandler
+	BlogHandler *handler.BlogHandler
 }
 
 func NewServer(conn *sql.DB, cfg *config.Config) *Server {
@@ -21,14 +22,17 @@ func NewServer(conn *sql.DB, cfg *config.Config) *Server {
 	// Initialize Services
 	urlService := service.NewURLService(queries)
 	qrService := service.NewQRService(cfg.BaseURL)
+	blogService := service.NewBlogService(queries)
 
 	// Initialize Handlers
 	urlHandler := handler.NewURLHandler(urlService)
 	qrHandler := handler.NewQRHandler(qrService)
+	blogHandler := handler.NewBlogHandler(blogService)
 
 	return &Server{
-		Config:     cfg,
-		URLHandler: urlHandler,
-		QRHandler:  qrHandler,
+		Config:      cfg,
+		URLHandler:  urlHandler,
+		QRHandler:   qrHandler,
+		BlogHandler: blogHandler,
 	}
 }
