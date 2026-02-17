@@ -6,14 +6,15 @@ import { Input, Textarea } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Select, SelectItem } from "@heroui/select";
-import { Image } from "@heroui/image";
-import { Save, ArrowLeft, Upload } from "lucide-react";
+import { Save, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 import { PostStatus } from "@/types/blog";
 import RichTextEditor from "@/components/editor/RichTextEditor";
+import ImagePicker from "@/components/ImagePicker";
 import { usePost, useUpdatePost } from "@/hooks/usePosts";
 import { useCategories } from "@/hooks/useCategories";
+import { useImage } from "@/hooks/useImages";
 
 export default function EditPostPage({
   params,
@@ -31,9 +32,15 @@ export default function EditPostPage({
   const [slug, setSlug] = useState("");
   const [content, setContent] = useState("");
   const [excerpt, setExcerpt] = useState("");
-  const [featuredImage, setFeaturedImage] = useState("");
+  const [featuredImage, setFeaturedImage] = useState(""); // Image ID (UUID)
+  const [featuredImageUrl, setFeaturedImageUrl] = useState(""); // Resolved URL
   const [status, setStatus] = useState<PostStatus>("draft");
   const [categoryId, setCategoryId] = useState("");
+
+  // Resolve featured image ID to URL
+  const { data: featuredImageData } = useImage(featuredImage);
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
   // Helper to safely extract string from sql.NullString objects
   const getString = (val: unknown): string => {
@@ -58,6 +65,13 @@ export default function EditPostPage({
     }
   }, [post]);
 
+  // Resolve image URL when featured image data is loaded
+  useEffect(() => {
+    if (featuredImageData) {
+      setFeaturedImageUrl(`${apiUrl}${featuredImageData.urls.medium}`);
+    }
+  }, [featuredImageData, apiUrl]);
+
   const handleUpdate = async () => {
     try {
       const payload = {
@@ -71,7 +85,6 @@ export default function EditPostPage({
         tags: [],
         meta_description: "",
         keywords: "",
-        // published_at: new Date().toISOString(), // Optional, let server handle or zero value
       };
 
       await updateMutation.mutateAsync({
@@ -208,36 +221,17 @@ export default function EditPostPage({
               Featured Image
             </CardHeader>
             <CardBody className="gap-4">
-              {featuredImage ? (
-                <div className="relative rounded-lg overflow-hidden aspect-video">
-                  <Image
-                    alt="Featured"
-                    className="object-cover w-full h-full"
-                    src={featuredImage}
-                  />
-                  <Button
-                    className="absolute top-2 right-2 z-10"
-                    color="danger"
-                    size="sm"
-                    variant="flat"
-                    onPress={() => setFeaturedImage("")}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ) : (
-                <div className="border-2 border-dashed border-default-300 rounded-lg p-8 flex flex-col items-center justify-center text-default-400 gap-2">
-                  <Upload size={32} />
-                  <span className="text-sm">Enter Image URL below</span>
-                </div>
-              )}
-              <Input
-                placeholder="https://example.com/image.jpg"
-                startContent={
-                  <span className="text-default-400 text-sm">URL:</span>
-                }
+              <ImagePicker
+                previewUrl={featuredImageUrl}
                 value={featuredImage}
-                onValueChange={setFeaturedImage}
+                onClear={() => {
+                  setFeaturedImage("");
+                  setFeaturedImageUrl("");
+                }}
+                onSelect={(imgId, url) => {
+                  setFeaturedImage(imgId);
+                  setFeaturedImageUrl(url);
+                }}
               />
             </CardBody>
           </Card>

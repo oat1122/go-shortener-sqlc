@@ -1,5 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "http",
+        hostname: process.env.IMAGE_HOSTNAME || "localhost",
+        port: process.env.IMAGE_PORT || "8080",
+        pathname: "/uploads/**",
+      },
+    ],
+  },
   async rewrites() {
     return [
       {

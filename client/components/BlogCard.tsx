@@ -7,12 +7,18 @@ import { Image } from "@heroui/image";
 import { Calendar, Eye } from "lucide-react";
 
 import { Post } from "@/types/blog";
+import { useImage } from "@/hooks/useImages";
+
+const PLACEHOLDER_IMAGE =
+  "https://images.unsplash.com/photo-1499750310159-57f0f294794c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80";
 
 interface BlogCardProps {
   post: Post;
 }
 
 export const BlogCard: React.FC<BlogCardProps> = ({ post }) => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
   // Helper to extract date string from sql.NullTime object or plain string
   const getDateString = (val: unknown): string => {
     if (typeof val === "string") return val;
@@ -49,6 +55,15 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post }) => {
   const title = getString(post.title);
   const excerpt = getString(post.excerpt);
   const content = getString(post.content);
+  const featuredImageId = getString(post.featured_image);
+
+  // Resolve Image ID to URL
+  const { data: imageData } = useImage(featuredImageId);
+  const imageUrl = imageData
+    ? `${apiUrl}${imageData.urls.medium}`
+    : featuredImageId
+      ? undefined // still loading
+      : PLACEHOLDER_IMAGE;
 
   return (
     <Card
@@ -63,10 +78,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post }) => {
             className="w-full object-cover h-[200px]"
             radius="lg"
             shadow="sm"
-            src={
-              post.featured_image ||
-              "https://images.unsplash.com/photo-1499750310159-57f0f294794c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-            }
+            src={imageUrl || PLACEHOLDER_IMAGE}
             width="100%"
           />
         </CardBody>

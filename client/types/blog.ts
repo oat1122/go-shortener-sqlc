@@ -30,3 +30,26 @@ export interface Post {
   created_at: string;
   updated_at: string;
 }
+
+// Image System
+
+export interface ImageURLs {
+  original: string;
+  medium: string;
+  thumb: string;
+}
+
+export interface ImageItem {
+  id: string;
+  filename: string;
+  original_name: string;
+  alt_text: string;
+  title: string;
+  mime_type: string;
+  size_bytes: number;
+  width: number;
+  height: number;
+  urls: ImageURLs;
+  created_at: string;
+  updated_at: string;
+}

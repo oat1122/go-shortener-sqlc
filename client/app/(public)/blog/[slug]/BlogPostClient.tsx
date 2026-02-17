@@ -8,6 +8,7 @@ import { Calendar, Eye, Folder, Home } from "lucide-react";
 
 import BlogPostSkeleton from "@/components/skeletons/BlogPostSkeleton";
 import { usePublicPost } from "@/hooks/usePosts";
+import { useImage } from "@/hooks/useImages";
 
 interface BlogPostClientProps {
   slug: string;
@@ -15,6 +16,7 @@ interface BlogPostClientProps {
 
 export default function BlogPostClient({ slug }: BlogPostClientProps) {
   const { data: post, isLoading } = usePublicPost(slug);
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
   const getString = (val: unknown): string => {
     if (typeof val === "string") return val;
@@ -24,6 +26,13 @@ export default function BlogPostClient({ slug }: BlogPostClientProps) {
 
     return "";
   };
+
+  // Extract image ID before early returns so useImage hook is always called
+  const featuredImageId = getString(post?.featured_image);
+  const { data: imageData } = useImage(featuredImageId);
+  const featuredImageUrl = imageData
+    ? `${apiUrl}${imageData.urls.original}`
+    : undefined;
 
   if (isLoading) {
     return <BlogPostSkeleton />;
@@ -37,14 +46,13 @@ export default function BlogPostClient({ slug }: BlogPostClientProps) {
   const content = getString(post.content);
   const excerpt = getString(post.excerpt);
   const metaDescription = getString(post.meta_description);
-  const featuredImage = getString(post.featured_image);
   const categoryName = getString(post.category_name);
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: title,
-    image: featuredImage ? [featuredImage] : [],
+    image: featuredImageUrl ? [featuredImageUrl] : [],
     datePublished: post.published_at,
     dateModified: post.updated_at,
     description: metaDescription || excerpt,
@@ -129,12 +137,12 @@ export default function BlogPostClient({ slug }: BlogPostClientProps) {
           {title}
         </h1>
 
-        {featuredImage && (
+        {featuredImageUrl && (
           <div className="relative w-full h-[400px] mb-8 rounded-xl overflow-hidden shadow-lg">
-            <Image
+            <img
               alt={title}
               className="w-full h-full object-cover"
-              src={featuredImage}
+              src={featuredImageUrl}
             />
           </div>
         )}

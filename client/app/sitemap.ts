@@ -5,15 +5,21 @@ import { postService } from "@/services/postService";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-  // Get all published posts
-  const posts = await postService.getPublishedPosts();
+  // Get all published posts (gracefully handle server being unavailable during build)
+  let postUrls: MetadataRoute.Sitemap = [];
 
-  const postUrls = posts.map((post) => ({
-    url: `${baseUrl}/blog/${post.slug}`,
-    lastModified: new Date(post.updated_at || post.created_at),
-    changeFrequency: "weekly" as const,
-    priority: 0.7,
-  }));
+  try {
+    const posts = await postService.getPublishedPosts();
+
+    postUrls = posts.map((post) => ({
+      url: `${baseUrl}/blog/${post.slug}`,
+      lastModified: new Date(post.updated_at || post.created_at),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
+  } catch {
+    // API server may not be running during build — skip dynamic posts
+  }
 
   return [
     {

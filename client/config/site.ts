@@ -56,6 +56,10 @@ export const siteConfig = {
       label: "Tags",
       href: "/admin/tags",
     },
+    {
+      label: "Images",
+      href: "/admin/images",
+    },
   ],
   links: {
     // github: "https://github.com/heroui-inc/heroui",

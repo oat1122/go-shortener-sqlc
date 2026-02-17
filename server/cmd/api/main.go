@@ -43,16 +43,18 @@ func main() {
 	}
 	slog.Info("Upload directory ready", "path", cfg.UploadDir)
 
-	// 4. Connect to Redis
+	// 4. Connect to Redis (optional — server works without it)
 	rdb := redis.NewClient(&redis.Options{
 		Addr: cfg.RedisAddr,
 	})
 	if err := rdb.Ping(context.Background()).Err(); err != nil {
-		slog.Error("Failed to connect to Redis", "addr", cfg.RedisAddr, "error", err)
-		os.Exit(1)
+		slog.Warn("Redis not available, running without cache", "addr", cfg.RedisAddr, "error", err)
+		rdb.Close()
+		rdb = nil
+	} else {
+		defer rdb.Close()
+		slog.Info("Redis connected", "addr", cfg.RedisAddr)
 	}
-	defer rdb.Close()
-	slog.Info("Redis connected", "addr", cfg.RedisAddr)
 
 	// 5. Initialize Server
 	srv := api.NewServer(db, cfg, rdb)

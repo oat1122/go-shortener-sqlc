@@ -6,11 +6,11 @@ import { Input, Textarea } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Select, SelectItem } from "@heroui/select";
-import { Image } from "@heroui/image";
-import { Save, ArrowLeft, Upload } from "lucide-react";
+import { Save, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 import RichTextEditor from "@/components/editor/RichTextEditor";
+import ImagePicker from "@/components/ImagePicker";
 import { useCreatePost } from "@/hooks/usePosts";
 import { useCategories } from "@/hooks/useCategories";
 import { PostStatus } from "@/types/blog";
@@ -24,7 +24,8 @@ export default function CreatePostPage() {
   const [slug, setSlug] = useState("");
   const [content, setContent] = useState("");
   const [excerpt, setExcerpt] = useState("");
-  const [featuredImage, setFeaturedImage] = useState("");
+  const [featuredImage, setFeaturedImage] = useState(""); // Image ID (UUID)
+  const [featuredImageUrl, setFeaturedImageUrl] = useState(""); // Resolved URL for preview
   const [status, setStatus] = useState<PostStatus>("draft");
   const [categoryId, setCategoryId] = useState("");
 
@@ -51,7 +52,6 @@ export default function CreatePostPage() {
         featured_image: featuredImage,
         status,
         category_id: categoryId,
-        // published_at: status === 'published' ? new Date().toISOString() : null,
       });
 
       router.push("/admin/posts");
@@ -178,36 +178,17 @@ export default function CreatePostPage() {
               Featured Image
             </CardHeader>
             <CardBody className="gap-4">
-              {featuredImage ? (
-                <div className="relative rounded-lg overflow-hidden aspect-video">
-                  <Image
-                    alt="Featured"
-                    className="object-cover w-full h-full"
-                    src={featuredImage}
-                  />
-                  <Button
-                    className="absolute top-2 right-2 z-10"
-                    color="danger"
-                    size="sm"
-                    variant="flat"
-                    onPress={() => setFeaturedImage("")}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ) : (
-                <div className="border-2 border-dashed border-default-300 rounded-lg p-8 flex flex-col items-center justify-center text-default-400 gap-2">
-                  <Upload size={32} />
-                  <span className="text-sm">Enter Image URL below</span>
-                </div>
-              )}
-              <Input
-                placeholder="https://example.com/image.jpg"
-                startContent={
-                  <span className="text-default-400 text-sm">URL:</span>
-                }
+              <ImagePicker
+                previewUrl={featuredImageUrl}
                 value={featuredImage}
-                onValueChange={setFeaturedImage}
+                onClear={() => {
+                  setFeaturedImage("");
+                  setFeaturedImageUrl("");
+                }}
+                onSelect={(id, url) => {
+                  setFeaturedImage(id);
+                  setFeaturedImageUrl(url);
+                }}
               />
             </CardBody>
           </Card>

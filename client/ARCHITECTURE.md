@@ -59,7 +59,8 @@ client/
 │   ├── admin/                # Protected Admin Area
 │   │   ├── layout.tsx        # Admin layout (includes Sidebar + Navbar)
 │   │   ├── categories/       # Category CRUD
-│   │   ├── posts/            # Blog Post Editor (Tiptap integration)
+│   │   ├── images/           # Image Gallery CRUD (upload, edit SEO, delete)
+│   │   ├── posts/            # Blog Post Editor (Tiptap + ImagePicker)
 │   │   └── tags/             # Tag CRUD
 │   ├── _error.tsx            # Global Error Boundary
 │   ├── layout.tsx            # Root Layout (HTML, Fonts, Global Providers)
@@ -69,6 +70,7 @@ client/
 │   ├── editor/               # Tiptap toolbar and editor wrapper
 │   ├── providers/            # Context Providers (QueryProvider, etc.)
 │   ├── ui/                   # Reusable UI blocks (if any custom modifications)
+│   ├── ImagePicker.tsx       # Reusable image select/upload modal
 │   ├── navbar.tsx            # Main navigation bar
 │   ├── sidebar.tsx           # Admin dashboard sidebar
 │   ├── icons.tsx             # Centralized icon registry
@@ -76,13 +78,14 @@ client/
 ├── config/                   # Static Configuration
 │   └── site.ts               # Site metadata, menu links, admin nav items
 ├── hooks/                    # Custom React Hooks
+│   ├── useImages.ts          # Image CRUD hooks (upload, list, update, delete)
 │   ├── use-debounce.ts       # Debounce utility for inputs
 │   └── ...                   # Other utility hooks
 ├── lib/                      # Infrastructure & Utilities
 │   ├── axios.ts              # Axios instance & Null handling logic
 │   └── utils.ts              # Styling utilities (clsx + tailwind-merge)
 ├── services/                 # API Service Layer (Pure TS)
-│   ├── itemsService.ts       # Example CRUD service
+│   ├── imageService.ts       # Image CRUD (upload via FormData, SEO metadata)
 │   ├── postService.ts        # Blog post management
 │   ├── shortenerService.ts   # URL shortening & QR generation
 │   ├── categoryService.ts    # Admin category management
@@ -150,6 +153,25 @@ Instead of a large `tailwind.config.js`, the project leverages standard CSS vari
 
 - **`globals.css`**: Defines `@theme` blocks where colors, fonts, and spacing are mapped to CSS variables.
 - **HeroUI**: Integrated via a plugin directive `@plugin '../hero.ts'` which likely points to a local typescript file defining the HeroUI theme tokens.
+
+## Image System
+
+The client manages images through the server's Image API, which stores files locally in 3 sizes (thumb/medium/original).
+
+### Key Components
+
+- **`imageService.ts`**: Handles upload (via `FormData`), list, get, updateMeta, and delete.
+- **`useImages.ts`**: TanStack Query hooks wrapping the service with cache invalidation and toast notifications.
+- **`ImagePicker.tsx`**: Reusable modal component with two tabs — **Library** (select existing) and **Upload New** (drag & drop with SEO fields).
+- **`admin/images/page.tsx`**: Full gallery management page.
+
+### Post Integration
+
+Posts store `featured_image` as an **Image ID (UUID)**, not a URL. The edit post page resolves the ID to a URL via `useImage(id)` for preview. This decouples the image storage from the post, allowing images to be reused.
+
+### Performance
+
+Images are served by the Go backend with `Cache-Control: public, max-age=31536000, immutable` headers. UUID filenames ensure cache-busting only happens on actual changes. Next.js `remotePatterns` is configured via `.env.local` for image optimization.
 
 ## Data Flow Examples
 
