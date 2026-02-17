@@ -1,9 +1,12 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { Image } from "@heroui/image";
-import { Calendar, Eye, Folder } from "lucide-react";
+import { Breadcrumbs, BreadcrumbItem } from "@heroui/breadcrumbs";
+import { Calendar, Eye, Folder, Home } from "lucide-react";
 
+import BlogPostSkeleton from "@/components/skeletons/BlogPostSkeleton";
 import { usePublicPost } from "@/hooks/usePosts";
 
 interface BlogPostClientProps {
@@ -23,7 +26,7 @@ export default function BlogPostClient({ slug }: BlogPostClientProps) {
   };
 
   if (isLoading) {
-    return <div className="text-center py-20">Loading post...</div>;
+    return <BlogPostSkeleton />;
   }
 
   if (!post) {
@@ -52,7 +55,21 @@ export default function BlogPostClient({ slug }: BlogPostClientProps) {
     },
   };
 
-  const formatDate = (dateString?: string) => {
+  // Helper to extract date string from sql.NullTime object or plain string
+  const getDateString = (val: unknown): string => {
+    if (typeof val === "string") return val;
+    if (val && typeof val === "object" && "Time" in val && "Valid" in val) {
+      const nullTime = val as { Time: string; Valid: boolean };
+
+      if (nullTime.Valid) return nullTime.Time;
+    }
+
+    return "";
+  };
+
+  const formatDate = (dateVal?: unknown) => {
+    const dateString = getDateString(dateVal);
+
     if (!dateString) return "";
 
     return new Date(dateString).toLocaleDateString("th-TH", {
@@ -71,6 +88,23 @@ export default function BlogPostClient({ slug }: BlogPostClientProps) {
         type="application/ld+json"
       />
 
+      {/* Breadcrumbs */}
+      <Breadcrumbs className="mb-6" size="lg" variant="solid">
+        <BreadcrumbItem startContent={<Home size={16} />}>
+          <Link href="/blog">Blog</Link>
+        </BreadcrumbItem>
+        {categoryName && (
+          <BreadcrumbItem>
+            <span>{categoryName}</span>
+          </BreadcrumbItem>
+        )}
+        <BreadcrumbItem isCurrent>
+          <span className="line-clamp-1 max-w-[200px] md:max-w-[400px]">
+            {title}
+          </span>
+        </BreadcrumbItem>
+      </Breadcrumbs>
+
       <header className="mb-8">
         <div className="flex gap-2 mb-4 text-sm text-default-500 flex-wrap">
           {categoryName && (
@@ -81,7 +115,9 @@ export default function BlogPostClient({ slug }: BlogPostClientProps) {
           )}
           <div className="flex items-center gap-1">
             <Calendar size={14} />
-            <span>{formatDate(post.published_at)}</span>
+            <span>
+              {formatDate(post.published_at) || formatDate(post.created_at)}
+            </span>
           </div>
           <div className="flex items-center gap-1">
             <Eye size={14} />

@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-import apiClient from "@/lib/axios";
-import { Tag } from "@/types/blog";
+import { tagService } from "@/services/tagService";
 
 // Query Keys
 export const tagKeys = {
@@ -12,43 +11,11 @@ export const tagKeys = {
   detail: (id: string) => [...tagKeys.details(), id] as const,
 };
 
-// API Functions
-const fetchTags = async (): Promise<Tag[]> => {
-  const response = await apiClient.get<Tag[]>("/api/tags");
-
-  return response.data;
-};
-
-const createTag = async (data: {
-  name: string;
-  slug: string;
-}): Promise<Tag> => {
-  const response = await apiClient.post<Tag>("/api/tags", data);
-
-  return response.data;
-};
-
-const updateTag = async ({
-  id,
-  data,
-}: {
-  id: string;
-  data: { name: string; slug: string };
-}): Promise<Tag> => {
-  const response = await apiClient.put<Tag>(`/api/tags/${id}`, data);
-
-  return response.data;
-};
-
-const deleteTag = async (id: string): Promise<void> => {
-  await apiClient.delete(`/api/tags/${id}`);
-};
-
 // Hooks
 export const useTags = () => {
   return useQuery({
     queryKey: tagKeys.lists(),
-    queryFn: fetchTags,
+    queryFn: tagService.getAll,
   });
 };
 
@@ -56,7 +23,7 @@ export const useCreateTag = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createTag,
+    mutationFn: tagService.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: tagKeys.lists() });
     },
@@ -67,7 +34,7 @@ export const useUpdateTag = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: updateTag,
+    mutationFn: tagService.update,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: tagKeys.lists() });
     },
@@ -78,7 +45,7 @@ export const useDeleteTag = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: deleteTag,
+    mutationFn: tagService.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: tagKeys.lists() });
     },

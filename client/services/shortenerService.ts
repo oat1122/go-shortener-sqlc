@@ -6,6 +6,15 @@ export interface ShortenResponse {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+export interface QROptions {
+  logoSize?: number;
+  borderRadius?: number;
+  fgColor?: string;
+  bgColor?: string;
+  gradientStart?: string;
+  gradientEnd?: string;
+}
+
 export const shortenerService = {
   shorten: async (url: string): Promise<ShortenResponse> => {
     const res = await apiClient.post<ShortenResponse>("/shorten", { url });
@@ -16,14 +25,7 @@ export const shortenerService = {
   generateQR: async (
     code: string,
     logo?: File,
-    options?: {
-      logoSize?: number;
-      borderRadius?: number;
-      fgColor?: string;
-      bgColor?: string;
-      gradientStart?: string;
-      gradientEnd?: string;
-    },
+    options?: QROptions,
   ): Promise<Blob> => {
     const formData = new FormData();
 

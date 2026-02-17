@@ -13,7 +13,21 @@ interface BlogCardProps {
 }
 
 export const BlogCard: React.FC<BlogCardProps> = ({ post }) => {
-  const formatDate = (dateString?: string) => {
+  // Helper to extract date string from sql.NullTime object or plain string
+  const getDateString = (val: unknown): string => {
+    if (typeof val === "string") return val;
+    if (val && typeof val === "object" && "Time" in val && "Valid" in val) {
+      const nullTime = val as { Time: string; Valid: boolean };
+
+      if (nullTime.Valid) return nullTime.Time;
+    }
+
+    return "";
+  };
+
+  const formatDate = (dateVal?: unknown) => {
+    const dateString = getDateString(dateVal);
+
     if (!dateString) return "";
 
     return new Date(dateString).toLocaleDateString("th-TH", {
@@ -74,7 +88,9 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post }) => {
           </p>
           <div className="flex gap-2 items-center text-default-400 mt-2">
             <Calendar size={14} />
-            <span>{formatDate(post.published_at)}</span>
+            <span>
+              {formatDate(post.published_at) || formatDate(post.created_at)}
+            </span>
           </div>
         </CardFooter>
       </Link>

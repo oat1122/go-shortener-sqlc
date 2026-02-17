@@ -5,19 +5,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Divider } from "@heroui/divider";
-import {
-  LayoutDashboard,
-  FileText,
-  Tag,
-  LogOut,
-  Globe,
-  X,
-  ChevronLeft,
-} from "lucide-react";
+import { LayoutDashboard, FileText, Tag, LogOut, Globe, X } from "lucide-react";
 import clsx from "clsx";
 
 import { siteConfig } from "@/config/site";
 import { useAppStore } from "@/store/useAppStore";
+import { ThemeSwitch } from "@/components/theme-switch";
 
 export const Sidebar = () => {
   const pathname = usePathname();
@@ -49,7 +42,14 @@ export const Sidebar = () => {
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          role="button"
+          tabIndex={0}
           onClick={() => setSidebarOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              setSidebarOpen(false);
+            }
+          }}
         />
       )}
 
@@ -60,25 +60,13 @@ export const Sidebar = () => {
         )}
       >
         <div className="relative h-full flex flex-col">
-          {/* Close Button - Middle Right */}
-          <Button
-            isIconOnly
-            size="sm"
-            variant="solid"
-            color="default"
-            className="absolute -right-3 top-1/2 transform -translate-y-1/2 z-50 rounded-full shadow-md border border-divider hidden lg:flex"
-            onPress={() => setSidebarOpen(false)}
-          >
-            <ChevronLeft size={16} />
-          </Button>
-
           <div className="p-6 flex items-center justify-between font-bold text-xl text-primary">
             <span>Admin Panel</span>
             <Button
               isIconOnly
+              className="lg:hidden"
               size="sm"
               variant="light"
-              className="lg:hidden"
               onPress={() => setSidebarOpen(false)}
             >
               <X size={20} />
@@ -99,7 +87,11 @@ export const Sidebar = () => {
                       : "text-default-600 hover:bg-default-100",
                   )}
                   href={item.href}
-                  onClick={() => setSidebarOpen(false)} // Close sidebar on mobile when navigating
+                  onClick={() => {
+                    if (window.innerWidth < 1024) {
+                      setSidebarOpen(false);
+                    }
+                  }}
                 >
                   {iconMap[item.href] || <FileText size={20} />}
                   <span>{item.label}</span>
@@ -117,7 +109,11 @@ export const Sidebar = () => {
             </Link>
           </nav>
 
-          <div className="p-4 border-t border-divider">
+          <div className="p-4 border-t border-divider flex flex-col gap-4">
+            <div className="flex items-center justify-between px-2">
+              <span className="text-default-600 font-medium">Theme</span>
+              <ThemeSwitch />
+            </div>
             <Button
               fullWidth
               color="danger"

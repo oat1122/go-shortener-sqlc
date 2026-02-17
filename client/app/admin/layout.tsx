@@ -1,11 +1,12 @@
 "use client";
 
 import React from "react";
-import { useAppStore } from "@/store/useAppStore";
-import { Sidebar } from "@/components/sidebar";
 import { Button } from "@heroui/button";
-import { Menu } from "lucide-react";
+import { PanelLeft } from "lucide-react";
 import clsx from "clsx";
+
+import { Sidebar } from "@/components/sidebar";
+import { useAppStore } from "@/store/useAppStore";
 
 export default function AdminLayout({
   children,
@@ -29,12 +30,11 @@ export default function AdminLayout({
           <header className="mb-6 flex items-center gap-4">
             <Button
               isIconOnly
+              aria-label="Toggle Sidebar"
               variant="light"
               onPress={toggleSidebar}
-              aria-label="Toggle Sidebar"
-              className={clsx(isSidebarOpen && "hidden")}
             >
-              <Menu />
+              <PanelLeft />
             </Button>
             {/* You can add breadcrumbs or title here if needed */}
           </header>

@@ -237,6 +237,12 @@ func (s *BlogService) UpdatePost(ctx context.Context, params UpdatePostParams) e
 		params.Slug = utils.MakeSlug(params.Title)
 	}
 
+	// Auto-set published_at when publishing for the first time
+	publishedAt := params.PublishedAt
+	if params.Status == db.PostsStatusPublished && publishedAt.IsZero() {
+		publishedAt = time.Now()
+	}
+
 	// 1. Update Post
 	err := s.q.UpdatePost(ctx, db.UpdatePostParams{
 		ID:              params.ID,
@@ -249,7 +255,7 @@ func (s *BlogService) UpdatePost(ctx context.Context, params UpdatePostParams) e
 		FeaturedImage:   sql.NullString{String: params.FeaturedImage, Valid: params.FeaturedImage != ""},
 		Status:          params.Status,
 		CategoryID:      sql.NullString{String: params.CategoryID, Valid: params.CategoryID != ""},
-		PublishedAt:     sql.NullTime{Time: params.PublishedAt, Valid: !params.PublishedAt.IsZero()},
+		PublishedAt:     sql.NullTime{Time: publishedAt, Valid: params.Status == db.PostsStatusPublished},
 	})
 	if err != nil {
 		return err
