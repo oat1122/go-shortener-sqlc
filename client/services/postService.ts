@@ -6,6 +6,19 @@ export interface UpdatePostData {
   slug: string;
   content: string;
   excerpt: string;
+  meta_description?: string;
+  keywords?: string;
+  featured_image: string;
+  status: PostStatus;
+  category_id: string;
+  tags?: string[];
+}
+
+export interface CreatePostDTO {
+  title: string;
+  slug: string;
+  content: string;
+  excerpt: string;
   featured_image: string;
   status: PostStatus;
   category_id: string;
@@ -37,7 +50,7 @@ export const postService = {
   },
 
   // Create post
-  createPost: async (data: any): Promise<void> => {
+  createPost: async (data: CreatePostDTO): Promise<void> => {
     await apiClient.post("/api/admin/posts", data);
   },
 

@@ -41,7 +41,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post }) => {
       className="h-full hover:scale-[1.02] transition-transform"
       shadow="sm"
     >
-      <Link className="w-full h-full" href={`/blog/${post.slug}`}>
+      <Link className="w-full h-full" href={`/blog/${getString(post.slug)}`}>
         <CardBody className="overflow-visible p-0">
           <Image
             alt={title}

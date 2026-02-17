@@ -47,7 +47,8 @@ export const useCreatePost = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: postService.createPost,
+    mutationFn: (data: import("@/services/postService").CreatePostDTO) =>
+      postService.createPost(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: postKeys.lists() });
       addToast({

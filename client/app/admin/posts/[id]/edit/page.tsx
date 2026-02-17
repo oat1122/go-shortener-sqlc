@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
 import { Input, Textarea } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -20,6 +21,7 @@ export default function EditPostPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
   const { data: post, isLoading: isPostLoading } = usePost(id);
   const { data: categories = [] } = useCategories();
   const updateMutation = useUpdatePost();
@@ -33,39 +35,56 @@ export default function EditPostPage({
   const [status, setStatus] = useState<PostStatus>("draft");
   const [categoryId, setCategoryId] = useState("");
 
+  // Helper to safely extract string from sql.NullString objects
+  const getString = (val: unknown): string => {
+    if (typeof val === "string") return val;
+    if (val && typeof val === "object" && "String" in val) {
+      return (val as { String: string }).String || "";
+    }
+    return "";
+  };
+
   // Sync state with post data when loaded
   useEffect(() => {
     if (post) {
-      setTitle(post.title);
-      setSlug(post.slug);
-      setContent(post.content);
-      setExcerpt(post.excerpt || "");
-      setFeaturedImage(post.featured_image || "");
+      setTitle(getString(post.title));
+      setSlug(getString(post.slug));
+      setContent(getString(post.content));
+      setExcerpt(getString(post.excerpt));
+      setFeaturedImage(getString(post.featured_image));
       setStatus(post.status);
-      setCategoryId(post.category_id);
+      setCategoryId(getString(post.category_id));
     }
   }, [post]);
 
   const handleUpdate = async () => {
     try {
+      const payload = {
+        title,
+        slug,
+        content,
+        excerpt,
+        featured_image: featuredImage || "",
+        status,
+        category_id: categoryId,
+        tags: [],
+        meta_description: "",
+        keywords: "",
+        // published_at: new Date().toISOString(), // Optional, let server handle or zero value
+      };
+
       await updateMutation.mutateAsync({
         id: id,
-        data: {
-          title,
-          slug,
-          content,
-          excerpt,
-          featured_image: featuredImage,
-          status,
-          category_id: categoryId,
-        },
+        data: payload,
       });
 
-      alert("Post updated successfully!");
-    } catch (error) {
+      router.push("/admin/posts");
+    } catch (error: any) {
       // eslint-disable-next-line no-console
-      console.error(error);
-      alert("Failed to update post");
+      console.error("Update Error:", error.response?.data || error);
+      alert(
+        `Failed to update post: ${error.response?.data?.error || "Unknown error"}`,
+      );
     }
   };
 

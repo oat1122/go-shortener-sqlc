@@ -284,7 +284,7 @@ func (h *BlogHandler) UpdatePost(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	var req UpdatePostRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 

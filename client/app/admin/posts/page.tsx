@@ -25,7 +25,8 @@ const statusColorMap: Record<string, "success" | "warning" | "default"> = {
 };
 
 export default function AdminPostsPage() {
-  const { data: posts = [], isLoading } = usePosts();
+  const { data, isLoading } = usePosts();
+  const posts = data ?? [];
   const deleteMutation = useDeletePost();
 
   const handleDelete = async (id: string) => {

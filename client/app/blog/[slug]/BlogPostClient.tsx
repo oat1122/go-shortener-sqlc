@@ -13,6 +13,14 @@ interface BlogPostClientProps {
 export default function BlogPostClient({ slug }: BlogPostClientProps) {
   const { data: post, isLoading } = usePublicPost(slug);
 
+  const getString = (val: unknown): string => {
+    if (typeof val === "string") return val;
+    if (val && typeof val === "object" && "String" in val) {
+      return (val as { String: string }).String || "";
+    }
+    return "";
+  };
+
   if (isLoading) {
     return <div className="text-center py-20">Loading post...</div>;
   }
@@ -21,15 +29,22 @@ export default function BlogPostClient({ slug }: BlogPostClientProps) {
     return <div className="text-center py-20">Post not found</div>;
   }
 
+  const title = getString(post.title);
+  const content = getString(post.content);
+  const excerpt = getString(post.excerpt);
+  const metaDescription = getString(post.meta_description);
+  const featuredImage = getString(post.featured_image);
+  const categoryName = getString(post.category_name);
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    headline: post.title,
-    image: post.featured_image ? [post.featured_image] : [],
+    headline: title,
+    image: featuredImage ? [featuredImage] : [],
     datePublished: post.published_at,
     dateModified: post.updated_at,
-    description: post.meta_description || post.excerpt,
-    articleBody: post.content,
+    description: metaDescription || excerpt,
+    articleBody: content,
     author: {
       "@type": "Person",
       name: "Admin",
@@ -57,10 +72,10 @@ export default function BlogPostClient({ slug }: BlogPostClientProps) {
 
       <header className="mb-8">
         <div className="flex gap-2 mb-4 text-sm text-default-500 flex-wrap">
-          {post.category_name && (
+          {categoryName && (
             <div className="flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 rounded-full">
               <Folder size={14} />
-              <span>{post.category_name}</span>
+              <span>{categoryName}</span>
             </div>
           )}
           <div className="flex items-center gap-1">
@@ -74,22 +89,22 @@ export default function BlogPostClient({ slug }: BlogPostClientProps) {
         </div>
 
         <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
-          {post.title}
+          {title}
         </h1>
 
-        {post.featured_image && (
+        {featuredImage && (
           <div className="relative w-full h-[400px] mb-8 rounded-xl overflow-hidden shadow-lg">
             <Image
-              alt={post.title}
+              alt={title}
               className="w-full h-full object-cover"
-              src={post.featured_image}
+              src={featuredImage}
             />
           </div>
         )}
       </header>
 
       <div className="prose prose-lg max-w-none dark:prose-invert">
-        <div className="whitespace-pre-wrap">{post.content}</div>
+        <div dangerouslySetInnerHTML={{ __html: content }} />
       </div>
     </article>
   );

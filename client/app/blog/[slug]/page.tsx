@@ -16,7 +16,6 @@ async function getPost(slug: string): Promise<Post | null> {
       `${process.env.NEXT_PUBLIC_API_URL}/api/blog/${slug}`,
       {
         next: { revalidate: 60 },
-        cache: "no-store",
       },
     );
 
