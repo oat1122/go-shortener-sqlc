@@ -43,6 +43,20 @@ export const siteConfig = {
       href: "/blog",
     },
   ],
+  adminNavItems: [
+    {
+      label: "Posts",
+      href: "/admin/posts",
+    },
+    {
+      label: "Categories",
+      href: "/admin/categories",
+    },
+    {
+      label: "Tags",
+      href: "/admin/tags",
+    },
+  ],
   links: {
     // github: "https://github.com/heroui-inc/heroui",
     // twitter: "https://twitter.com/hero_ui",

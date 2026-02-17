@@ -18,6 +18,7 @@ export default function BlogPostClient({ slug }: BlogPostClientProps) {
     if (val && typeof val === "object" && "String" in val) {
       return (val as { String: string }).String || "";
     }
+
     return "";
   };
 

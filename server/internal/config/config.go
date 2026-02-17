@@ -39,9 +39,9 @@ func Load() *Config {
 	// }
 
 	baseURL := os.Getenv("BASE_URL")
-	// if baseURL == "" {
-	// 	baseURL = "http://localhost:3000"
-	// }
+	if baseURL == "" {
+		// baseURL = "http://localhost:8080"
+	}
 
 	return &Config{
 		Port:           port,

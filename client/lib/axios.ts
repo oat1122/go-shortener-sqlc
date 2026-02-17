@@ -6,9 +6,10 @@ import axios from "axios";
  * This handles the mismatch between Go's database/sql nullable types
  * and what the frontend expects.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 function normalizeNullableFields(data: any): any {
   if (data === null || data === undefined) return data;
+  if (typeof Blob !== "undefined" && data instanceof Blob) return data;
 
   // Check if this is a sql.NullString-like object: {String: "...", Valid: bool}
   if (
@@ -31,9 +32,11 @@ function normalizeNullableFields(data: any): any {
 
   if (typeof data === "object") {
     const result: Record<string, unknown> = {};
+
     for (const key of Object.keys(data)) {
       result[key] = normalizeNullableFields(data[key]);
     }
+
     return result;
   }
 
@@ -64,6 +67,7 @@ apiClient.interceptors.response.use(
   (response) => {
     // Normalize Go sql.Null* types to plain values
     response.data = normalizeNullableFields(response.data);
+
     return response;
   },
   (error) => {

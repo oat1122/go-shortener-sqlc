@@ -1,4 +1,5 @@
 import { MetadataRoute } from "next";
+
 import { postService } from "@/services/postService";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

@@ -41,6 +41,7 @@ export default function EditPostPage({
     if (val && typeof val === "object" && "String" in val) {
       return (val as { String: string }).String || "";
     }
+
     return "";
   };
 

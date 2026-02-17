@@ -28,24 +28,28 @@ export const postService = {
   // Get all posts (for admin list)
   getPosts: async (): Promise<Post[]> => {
     const res = await apiClient.get<Post[]>("/api/admin/posts");
+
     return res.data;
   },
 
   // Get single post by ID (Optimized)
   getPost: async (id: string): Promise<Post> => {
     const res = await apiClient.get<Post>(`/api/admin/posts/${id}`);
+
     return res.data;
   },
 
   // Get public published posts
   getPublishedPosts: async (): Promise<Post[]> => {
     const res = await apiClient.get<Post[]>("/api/blog");
+
     return res.data;
   },
 
   // Get public post by slug
   getPostBySlug: async (slug: string): Promise<Post> => {
     const res = await apiClient.get<Post>(`/api/blog/${slug}`);
+
     return res.data;
   },
 
@@ -57,6 +61,7 @@ export const postService = {
   // Update post
   updatePost: async (id: string, data: UpdatePostData): Promise<Post> => {
     const res = await apiClient.put<Post>(`/api/admin/posts/${id}`, data);
+
     return res.data;
   },
 

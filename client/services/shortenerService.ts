@@ -9,6 +9,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export const shortenerService = {
   shorten: async (url: string): Promise<ShortenResponse> => {
     const res = await apiClient.post<ShortenResponse>("/shorten", { url });
+
     return res.data;
   },
 

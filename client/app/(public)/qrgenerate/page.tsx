@@ -69,6 +69,7 @@ export default function QrGeneratePage() {
   useEffect(() => {
     if (qrBlob) {
       const url = URL.createObjectURL(qrBlob);
+
       setQrBlobUrl(url);
 
       // Cleanup
@@ -103,6 +104,7 @@ export default function QrGeneratePage() {
 
     try {
       const data = await shortenMutation.mutateAsync(longUrl);
+
       setShortCode(data.short_code);
       // Once shortCode is set, useGenerateQR will run automatically
     } catch {

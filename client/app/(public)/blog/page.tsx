@@ -3,8 +3,10 @@ import {
   HydrationBoundary,
   dehydrate,
 } from "@tanstack/react-query";
-import { postService } from "@/services/postService";
+
 import BlogListClient from "./BlogListClient";
+
+import { postService } from "@/services/postService";
 
 export default async function BlogPage() {
   const queryClient = new QueryClient();

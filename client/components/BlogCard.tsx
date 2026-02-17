@@ -28,6 +28,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post }) => {
     if (val && typeof val === "object" && "String" in val) {
       return val.String || "";
     }
+
     return "";
   };
 
