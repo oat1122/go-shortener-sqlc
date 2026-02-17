@@ -8,8 +8,11 @@ import { Button } from "@heroui/button";
 import { Alert } from "@heroui/alert";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
 
+import { useAppStore } from "@/store/useAppStore";
+
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAppStore();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isVisible, setIsVisible] = useState(false);
@@ -41,8 +44,9 @@ export default function LoginPage() {
       }
 
       // Login successful, redirect to admin dashboard
+      login({ username }); // Set user in store
       router.push("/admin/posts");
-      router.refresh(); // Refresh to update auth state (if any)
+      // router.refresh(); // No longer needed as state is managed by store
     } catch {
       setError("Invalid username or password");
     } finally {

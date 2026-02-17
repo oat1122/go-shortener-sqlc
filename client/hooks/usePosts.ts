@@ -96,7 +96,7 @@ export const useDeletePost = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: postService.deletePost,
+    mutationFn: (id: string) => postService.deletePost(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: postKeys.lists() });
       addToast({

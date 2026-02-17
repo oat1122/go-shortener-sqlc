@@ -29,15 +29,9 @@ export default function AdminPostsPage() {
   const posts = data ?? [];
   const deleteMutation = useDeletePost();
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!confirm("Are you sure you want to delete this post?")) return;
-    try {
-      await deleteMutation.mutateAsync(id);
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error("Error deleting post", error);
-      alert("Failed to delete post");
-    }
+    deleteMutation.mutate(id);
   };
 
   const renderCell = React.useCallback(
