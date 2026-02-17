@@ -1,142 +1,174 @@
 # Client Architecture
 
-This project is a modern web application built with **Next.js 15** (App Router), designed for performance, scalability, and developer experience. It interacts with a Go (Chi) backend.
+This project is a modern, high-performance web application built with **Next.js 15** (App Router). It serves as the frontend for a Go (Chi) backend, communicating via RESTful APIs protected by HttpOnly cookies.
 
 ## Tech Stack
 
-### Core
+### Core Framework
 
-- **Framework**: [Next.js 15.5](https://nextjs.org/) (React 18+, App Router)
+- **Framework**: [Next.js 15.5](https://nextjs.org/) (React 18.3+, App Router)
 - **Language**: TypeScript 5.6
 - **Build Tool**: Turbopack (dev), Next.js (build)
+- **Package Manager**: npm
 
 ### UI & Styling
 
-- **UI Component Library**: [HeroUI v2](https://heroui.com/) (formerly NextUI)
-- **Styling Engine**: [Tailwind CSS v4](https://tailwindcss.com/)
-  - Configured via `@theme` in CSS variables.
-  - Uses `@tailwindcss/typography` for blog content.
+- **Component Library**: [HeroUI v2.2+](https://heroui.com/) (formerly NextUI)
+  - Provides accessible, pre-styled components (Buttons, Inputs, Modals, etc.).
+- **Styling Engine**: [Tailwind CSS v4.1](https://tailwindcss.com/)
+  - **Zero-runtime**: Uses the new Rust-based compiler.
+  - **Configuration**: Managed via strict CSS variables in `@theme` blocks within `globals.css` (no `tailwind.config.js`).
+  - **Typography**: `@tailwindcss/typography` for rendering blog content.
 - **Animation**: [Framer Motion 11](https://www.framer.com/motion/)
+  - Used for complex animations and page transitions.
 - **Icons**: [Lucide React](https://lucide.dev/)
-- **Theme**: [Next Themes](https://github.com/pacocoursey/next-themes) (Dark/Light mode)
-- **Rich Text**: [Tiptap](https://tiptap.dev/) (Headless wrapper)
+- **Theme**: [Next Themes](https://github.com/pacocoursey/next-themes) for dark/light mode toggling.
+- **Rich Text Editor**: [Tiptap](https://tiptap.dev/) (Headless, using Starter Kit + Image + Link extensions).
 
 ### State Management
 
 - **Server State**: [TanStack Query v5](https://tanstack.com/query/latest)
-  - Handles API caching, revalidation, and optimistic updates.
-  - Hydration boundary established in `app/providers.tsx` via `components/providers/QueryProvider`.
+  - **Role**: Manages all asynchronous data (API responses).
+  - **Features**: Automatic caching, background refetching, optimistic updates.
+  - **Configuration**: `QueryClient` is initialized in `components/providers/QueryProvider.tsx` with default stale times.
 - **Client State**: [Zustand v5](https://github.com/pmndrs/zustand)
-  - Used for global UI state (e.g., Sidebar toggle).
+  - **Role**: Manages simple, synchronous global UI state.
+  - **Persistence**: Uses `persist` middleware to save state to `localStorage`.
+  - **Store**: `useAppStore` handles sidebar visibility (`isSidebarOpen`), user profile (`user`), and auth status (`isAuthenticated`).
 
 ### Networking
 
 - **HTTP Client**: [Axios](https://axios-http.com/)
-  - Custom instance with interceptors for error handling and data normalization.
+  - **Instance**: Centralized configuration in `lib/axios.ts`.
+  - **Base URL**: Loaded from `NEXT_PUBLIC_API_URL`.
+  - **Credentials**: `withCredentials: true` ensures HttpOnly cookies are sent with every request.
+  - **Interceptors**:
+    - **Response**: Normalizes Go `sql.Null*` types into native JS values.
+    - **Error**: Globally handles `401 Unauthorized` by redirecting to `/login`.
 
 ## Directory Structure
 
 ```
 client/
-├── app/                  # Next.js App Router (File-system routing)
-│   ├── (public)/         # Public Routes Group
-│   │   ├── blog/         # Blog listing and details
-│   │   ├── login/        # Authentication page
-│   │   ├── qrgenerate/   # QR Code generator tool
-│   │   └── shotlinks/    # Short link management
-│   ├── admin/            # Protected Admin Routes
-│   │   ├── categories/   # Category management
-│   │   ├── posts/        # Blog post CRUD
-│   │   └── tags/         # Tag management
-│   ├── _error.tsx        # Global error boundary
-│   ├── layout.tsx        # Root layout (HTML/Body, Fonts)
-│   ├── providers.tsx     # Global Context Providers Wrapper
-│   └── ...SEO files (robots.ts, sitemap.ts)
-├── components/           # UI Components
-│   ├── editor/           # Tiptap specific components
-│   ├── providers/        # Sub-providers (QueryClientProvider)
-│   ├── icons.tsx         # SVG Icon registry
-│   ├── navbar.tsx        # Top navigation
-│   ├── sidebar.tsx       # Admin sidebar
-│   ├── primitives.ts     # Shared Tailwind variant primitives (tv)
-│   └── ...shared components
-├── config/               # Static Configuration
-│   └── site.ts           # Menus, site metadata
-├── hooks/                # Custom React Hooks
-├── lib/                  # Core Utilities & Libraries
-│   ├── axios.ts          # Axios instance + Interceptors + Go Null Type Handling
-│   └── utils.ts          # Class merging (clsx + tailwind-merge)
-├── services/             # API Service Layer
-│   ├── itemsService.ts   # (Example) Domain specific API calls
-│   ├── postService.ts    # Blog/Post API
-│   └── shortenerService.ts # URL Shortener API
-├── store/                # Global Client Stores (Zustand)
-│   └── useAppStore.ts    # UI State (Sidebar, etc.)
-├── styles/               # CSS
-│   └── globals.css       # Tailwind v4 import & Theme config
-└── types/                # TypeScript Interfaces/Types
+├── app/                      # Next.js App Router (File-system routing)
+│   ├── (public)/             # Public Route Group (Marketing, Auth)
+│   │   ├── blog/             # Blog listing & details (Server Components + Hydration)
+│   │   ├── login/            # Login page (Client Component)
+│   │   ├── qrgenerate/       # QR Generator tool
+│   │   └── shotlinks/        # Public short link catalog
+│   ├── admin/                # Protected Admin Area
+│   │   ├── layout.tsx        # Admin layout (includes Sidebar + Navbar)
+│   │   ├── categories/       # Category CRUD
+│   │   ├── posts/            # Blog Post Editor (Tiptap integration)
+│   │   └── tags/             # Tag CRUD
+│   ├── _error.tsx            # Global Error Boundary
+│   ├── layout.tsx            # Root Layout (HTML, Fonts, Global Providers)
+│   ├── providers.tsx         # Client Component wrapping all context providers
+│   └── ...                   # SEO files (robots.ts, sitemap.ts)
+├── components/               # React Components
+│   ├── editor/               # Tiptap toolbar and editor wrapper
+│   ├── providers/            # Context Providers (QueryProvider, etc.)
+│   ├── ui/                   # Reusable UI blocks (if any custom modifications)
+│   ├── navbar.tsx            # Main navigation bar
+│   ├── sidebar.tsx           # Admin dashboard sidebar
+│   ├── icons.tsx             # Centralized icon registry
+│   └── primitives.ts         # Tailwind Variants (tv) definitions
+├── config/                   # Static Configuration
+│   └── site.ts               # Site metadata, menu links, admin nav items
+├── hooks/                    # Custom React Hooks
+│   ├── use-debounce.ts       # Debounce utility for inputs
+│   └── ...                   # Other utility hooks
+├── lib/                      # Infrastructure & Utilities
+│   ├── axios.ts              # Axios instance & Null handling logic
+│   └── utils.ts              # Styling utilities (clsx + tailwind-merge)
+├── services/                 # API Service Layer (Pure TS)
+│   ├── itemsService.ts       # Example CRUD service
+│   ├── postService.ts        # Blog post management
+│   ├── shortenerService.ts   # URL shortening & QR generation
+│   ├── categoryService.ts    # Admin category management
+│   └── tagService.ts         # Admin tag management
+├── store/                    # Global State Stores
+│   └── useAppStore.ts        # Zustand store for UI & Auth state
+├── styles/                   # Global CSS
+│   └── globals.css           # Tailwind v4 @theme and @plugin configuration
+└── types/                    # TypeScript Definitions
+    └── index.ts              # Shared interfaces (e.g., SVGProps)
 ```
 
 ## Architecture Layers
 
-The application uses a **Layered Architecture** to separate concerns:
+The application follows a strict **Layered Architecture** to maintain separation of concerns:
 
-### 1. UI Layer (`app/`, `components/`)
+### 1. Presentation Layer (UI)
 
-- **Responsibility**: Visual presentation and user interaction.
-- **Pattern**: Server Components by default. Client Components (`"use client"`) only when interactivity (hooks, event listeners) is needed.
-- **Composition**: Layouts wrap pages; Providers wrap the application root.
+- **Location**: `app/` and `components/`.
+- **Strategy**:
+  - **Server Components (RSC)** are the default for fetching initial data and layout.
+  - **Client Components** (`"use client"`) are used for interactive elements (forms, toggles) and where hooks (`useQuery`, `useStore`) are needed.
+- **Theme**: Powered by `next-themes` and `HeroUIProvider` in `app/providers.tsx`.
 
-### 2. State & Data Layer (`hooks/`, `store/`)
+### 2. State Layer
 
-- **Server State (React Query)**: Fetches and caches data. Stored in `QueryClient`.
-- **Client State (Zustand)**: Ephemeral UI state.
-  - _Example_: `useAppStore` tracks if the sidebar is open/closed.
+- **Client State**: `useAppStore` (Zustand) implies a "single source of truth" for UI state like the sidebar. It persists to local storage so user preferences survive refreshes.
+- **Server State**: Data fetching logic is moved out of components into **Custom Hooks** or used directly via `useQuery`.
+  - _Note_: While not strictly enforced, complex queries are often wrapped in hooks (e.g., `usePosts`, `useCategories`).
 
-### 3. Service Layer (`services/`)
+### 3. Service Layer
 
-- **Responsibility**: Pure TypeScript objects defining API methods.
-- **Rule**: Components **never** import `axios` directly. They import a service.
-  - ✅ `shortenerService.generateQR(...)`
-  - ❌ `axios.post('/qr', ...)`
+- **Location**: `services/`.
+- **Purpose**: Abstracts all HTTP communication. Components/Hooks **never** call `axios` directly; they call a service method.
+- **Pattern**:
+  - Export a const object (e.g., `shortenerService`).
+  - Methods return typed Promises (e.g., `Promise<ShortenResponse>`).
+  - Handles request payload formatting (e.g., `FormData` for file uploads).
 
-### 4. Infrastructure/Lib Layer (`lib/`)
+### 4. Infrastructure Layer
 
-- **Axios Configuration (`lib/axios.ts`)**:
-  - **Base URL**: From `NEXT_PUBLIC_API_URL`.
-  - **Credentials**: `withCredentials: true` for cookie-based auth.
-  - **Data Normalization**: Automatically converts Go `sql.Null*` types (e.g., `{String: "foo", Valid: true}`) into native JS types (`"foo"`).
-  - **Error Handling**: Global interceptor redirects to `/login` on `401 Unauthorized`.
+- **Location**: `lib/`.
+- **Axios (`lib/axios.ts`)**: The backbone of communication.
+  - **Normalization**: Automatically recursively walks JSON responses. If it finds a Go-style Null object (e.g., `{ String: "foo", Valid: true }`), it unwraps it to `"foo"`. If `Valid` is false, it returns an appropriate default (empty string or 0).
 
 ## Key Architectural Decisions
 
-### Handling Go `null` Types
+### 1. Handling Go `sql.Null*` Types
 
-The backend uses Go's `database/sql` Null types, which serialize to JSON as struct objects (e.g., `{"description": {"String": "text", "Valid": true}}`).
-The frontend **Infrastructure Layer** (`lib/axios.ts`) intercepts responses and recursively normalizes these objects into simple values (`null`, `string`, `number`) before they reach the Service or UI layers.
+The Go backend often returns nullable database fields as struct objects. To prevent the frontend from needing checks like `item.description?.Valid ? item.description.String : ''` everywhere:
 
-### Authentication
+- **Solution**: A recursive function `normalizeNullableFields` in the Axios response interceptor unwraps these objects into standard JavaScript primitives before the data ever reaches the component.
 
-- **Mechanism**: HttpOnly Cookies (handled by backend).
-- **Client-Side**: The client doesn't manage tokens explicitly. It assumes the browser handles the cookie.
-- **Protection**:
-  - `middleware.ts` (if present) or Layout checks.
-  - Axios interceptor catches `401` responses and forces a hard redirect to login.
+### 2. Authentication Strategy
 
-### Styling (Tailwind v4)
+- **Session**: HttpOnly cookies are used for security (preventing XSS access to tokens).
+- **Client Awareness**: The `useAppStore` tracks an `isAuthenticated` boolean.
+- **Enforcement**:
+  - **Backend**: Returns `401 Unauthorized` if the cookie is missing/invalid.
+  - **Frontend**: Axios interceptor watches for `401` status and performs a `window.location.href = "/login"` to force re-authentication.
 
-- Configuration is handled effectively via CSS variables in `globals.css` using the `@theme` directive, removing the need for a complex `tailwind.config.js`.
-- **HeroUI** integration requires specific plugin setup in `globals.css` (`@plugin '../hero.ts'`).
+### 3. Tailwind v4 Configuration
 
-## Data Flow Example: QR Code Generation
+Instead of a large `tailwind.config.js`, the project leverages standard CSS variables.
 
-1.  **User Interaction**: User uploads a logo and clicks "Generate" on `/qrgenerate` (Client Component).
-2.  **Event Handler**: Calls `handleGenerate()`.
-3.  **Service Call**: Invokes `shortenerService.generateQR(code, logo, options)`.
-4.  **HTTP Request**:
-    - `lib/axios` constructs a `multipart/form-data` request.
-    - Request sent to `POST /api/shorten/{code}/qr`.
-5.  **Response Handling**:
-    - Backend returns a Blob (image).
-    - Axios returns raw data (response type: `blob`).
-6.  **UI Update**: Component creates a local URL (`URL.createObjectURL(blob)`) and displays the `<img src="..." />`.
+- **`globals.css`**: Defines `@theme` blocks where colors, fonts, and spacing are mapped to CSS variables.
+- **HeroUI**: Integrated via a plugin directive `@plugin '../hero.ts'` which likely points to a local typescript file defining the HeroUI theme tokens.
+
+## Data Flow Examples
+
+### Example 1: Generating a QR Code
+
+1.  **User**: Selects a logo file and sets color options in `app/(public)/qrgenerate/page.tsx`.
+2.  **Component**: Calls `handleGenerate()` when button is clicked.
+3.  **Service**: Calls `shortenerService.generateQR(code, logo, options)`.
+    - Constructs `FormData`.
+    - Appends file and options.
+4.  **Network**: `POST /api/shorten/{code}/qr` `multipart/form-data`.
+5.  **Backend**: Processes image and returns a `image/png` blob.
+6.  **Axios**: Receives `Blob`.
+7.  **Component**: `URL.createObjectURL(blob)` -> `<img src={url} />`.
+
+### Example 2: Admin Sidebar Toggle
+
+1.  **User**: Clicks the "Menu" icon in `Navbar`.
+2.  **Action**: Calls `useAppStore.getState().toggleSidebar()`.
+3.  **Store**: Updates `state.isSidebarOpen = !state.isSidebarOpen`.
+4.  **Persistence**: Zustand middleware saves new state to `localStorage`.
+5.  **UI**: `Sidebar` component (subscribed to store) re-renders, applying CSS classes to slide in/out.

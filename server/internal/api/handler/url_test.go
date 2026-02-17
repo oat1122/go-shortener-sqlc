@@ -28,7 +28,7 @@ func TestShortenURL(t *testing.T) {
 
 	// Create dependencies
 	queries := db.New(mockDB)
-	urlService := service.NewURLService(queries)
+	urlService := service.NewURLService(queries, nil)
 	handler := NewURLHandler(urlService)
 
 	tests := []struct {
@@ -125,7 +125,7 @@ func TestRedirectURL(t *testing.T) {
 	defer mockDB.Close()
 
 	queries := db.New(mockDB)
-	urlService := service.NewURLService(queries)
+	urlService := service.NewURLService(queries, nil)
 	handler := NewURLHandler(urlService)
 
 	tests := []struct {

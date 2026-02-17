@@ -51,6 +51,40 @@ func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) 
 	return err
 }
 
+const createImage = `-- name: CreateImage :exec
+
+INSERT INTO images (id, filename, original_name, alt_text, title, mime_type, size_bytes, width, height)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type CreateImageParams struct {
+	ID           string `json:"id"`
+	Filename     string `json:"filename"`
+	OriginalName string `json:"original_name"`
+	AltText      string `json:"alt_text"`
+	Title        string `json:"title"`
+	MimeType     string `json:"mime_type"`
+	SizeBytes    uint32 `json:"size_bytes"`
+	Width        uint32 `json:"width"`
+	Height       uint32 `json:"height"`
+}
+
+// Image Queries
+func (q *Queries) CreateImage(ctx context.Context, arg CreateImageParams) error {
+	_, err := q.db.ExecContext(ctx, createImage,
+		arg.ID,
+		arg.Filename,
+		arg.OriginalName,
+		arg.AltText,
+		arg.Title,
+		arg.MimeType,
+		arg.SizeBytes,
+		arg.Width,
+		arg.Height,
+	)
+	return err
+}
+
 const createPost = `-- name: CreatePost :exec
 
 INSERT INTO posts (
@@ -168,6 +202,16 @@ func (q *Queries) DeleteCategory(ctx context.Context, id string) error {
 	return err
 }
 
+const deleteImage = `-- name: DeleteImage :exec
+DELETE FROM images
+WHERE id = ?
+`
+
+func (q *Queries) DeleteImage(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteImage, id)
+	return err
+}
+
 const deletePost = `-- name: DeletePost :exec
 DELETE FROM posts
 WHERE id = ?
@@ -209,6 +253,30 @@ func (q *Queries) GetCategoryBySlug(ctx context.Context, slug string) (Category,
 	row := q.db.QueryRowContext(ctx, getCategoryBySlug, slug)
 	var i Category
 	err := row.Scan(&i.ID, &i.Name, &i.Slug)
+	return i, err
+}
+
+const getImage = `-- name: GetImage :one
+SELECT id, filename, original_name, alt_text, title, mime_type, size_bytes, width, height, created_at, updated_at FROM images
+WHERE id = ? LIMIT 1
+`
+
+func (q *Queries) GetImage(ctx context.Context, id string) (Image, error) {
+	row := q.db.QueryRowContext(ctx, getImage, id)
+	var i Image
+	err := row.Scan(
+		&i.ID,
+		&i.Filename,
+		&i.OriginalName,
+		&i.AltText,
+		&i.Title,
+		&i.MimeType,
+		&i.SizeBytes,
+		&i.Width,
+		&i.Height,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
 	return i, err
 }
 
@@ -412,6 +480,46 @@ func (q *Queries) ListCategories(ctx context.Context) ([]Category, error) {
 	for rows.Next() {
 		var i Category
 		if err := rows.Scan(&i.ID, &i.Name, &i.Slug); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listImages = `-- name: ListImages :many
+SELECT id, filename, original_name, alt_text, title, mime_type, size_bytes, width, height, created_at, updated_at FROM images
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListImages(ctx context.Context) ([]Image, error) {
+	rows, err := q.db.QueryContext(ctx, listImages)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Image
+	for rows.Next() {
+		var i Image
+		if err := rows.Scan(
+			&i.ID,
+			&i.Filename,
+			&i.OriginalName,
+			&i.AltText,
+			&i.Title,
+			&i.MimeType,
+			&i.SizeBytes,
+			&i.Width,
+			&i.Height,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -631,6 +739,23 @@ type UpdateCategoryParams struct {
 
 func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) error {
 	_, err := q.db.ExecContext(ctx, updateCategory, arg.Name, arg.Slug, arg.ID)
+	return err
+}
+
+const updateImage = `-- name: UpdateImage :exec
+UPDATE images
+SET alt_text = ?, title = ?, updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+`
+
+type UpdateImageParams struct {
+	AltText string `json:"alt_text"`
+	Title   string `json:"title"`
+	ID      string `json:"id"`
+}
+
+func (q *Queries) UpdateImage(ctx context.Context, arg UpdateImageParams) error {
+	_, err := q.db.ExecContext(ctx, updateImage, arg.AltText, arg.Title, arg.ID)
 	return err
 }
 

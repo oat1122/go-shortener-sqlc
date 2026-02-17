@@ -8,18 +8,24 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
-	"log"
+	"log/slog"
+	"time"
+
+	"github.com/redis/go-redis/v9"
 
 	"go-shortener-sqlc/internal/db"
 )
 
 type URLService struct {
-	q *db.Queries
+	q   *db.Queries
+	rdb *redis.Client
 }
 
-func NewURLService(q *db.Queries) *URLService {
-	return &URLService{q: q}
+func NewURLService(q *db.Queries, rdb *redis.Client) *URLService {
+	return &URLService{q: q, rdb: rdb}
 }
+
+const urlCacheTTL = 24 * time.Hour
 
 // Shorten processes the logic to shorten a URL.
 // It checks for existing URLs (deduplication) and handles collision retries.
@@ -42,7 +48,7 @@ func (s *URLService) Shorten(ctx context.Context, originalURL string) (string, e
 	for i := 0; i < maxRetries; i++ {
 		code, err := generateShortCode()
 		if err != nil {
-			log.Printf("Error generating short code: %v", err)
+			slog.Error("Error generating short code", "error", err)
 			continue
 		}
 
@@ -78,15 +84,36 @@ func (s *URLService) Shorten(ctx context.Context, originalURL string) (string, e
 		return "", err
 	}
 
+	// 5. Pre-cache the new URL in Redis
+	if s.rdb != nil {
+		s.rdb.Set(ctx, "url:"+shortCode, originalURL, urlCacheTTL)
+	}
+
 	return shortCode, nil
 }
 
 // GetOriginalURL retrieves the original URL for a given short code.
+// Uses Redis cache-aside pattern: check cache first, fallback to DB, then cache the result.
 func (s *URLService) GetOriginalURL(ctx context.Context, code string) (string, error) {
+	// 1. Check Redis cache first
+	if s.rdb != nil {
+		cached, err := s.rdb.Get(ctx, "url:"+code).Result()
+		if err == nil {
+			return cached, nil // Cache hit!
+		}
+	}
+
+	// 2. Cache miss → query DB
 	url, err := s.q.GetURL(ctx, code)
 	if err != nil {
 		return "", err
 	}
+
+	// 3. Store in Redis with TTL (ignore cache write errors)
+	if s.rdb != nil {
+		s.rdb.Set(ctx, "url:"+code, url.OriginalUrl, urlCacheTTL)
+	}
+
 	return url.OriginalUrl, nil
 }
 
@@ -98,3 +125,4 @@ func generateShortCode() (string, error) {
 	}
 	return base64.URLEncoding.EncodeToString(b)[:6], nil
 }
+

@@ -1,7 +1,7 @@
 package config
 
 import (
-	"log"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -13,13 +13,15 @@ type Config struct {
 	DatabaseURL    string
 	AllowedOrigins []string
 	BaseURL        string
+	UploadDir      string
+	RedisAddr      string
 }
 
 func Load() *Config {
 	// Try loading from current directory first, then fallback to relative path (for flexible development)
 	if err := godotenv.Load(); err != nil {
 		if err := godotenv.Load("../../.env"); err != nil {
-			log.Println("No .env file found, using default/system environment variables")
+			slog.Warn("No .env file found, using default/system environment variables")
 		}
 	}
 
@@ -43,11 +45,23 @@ func Load() *Config {
 		// baseURL = "http://localhost:8080"
 	}
 
+	uploadDir := os.Getenv("UPLOAD_DIR")
+	if uploadDir == "" {
+		uploadDir = "./uploads"
+	}
+
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+
 	return &Config{
 		Port:           port,
 		DatabaseURL:    dbURL,
 		AllowedOrigins: strings.Split(allowedOrigins, ","),
 		BaseURL:        baseURL,
+		UploadDir:      uploadDir,
+		RedisAddr:      redisAddr,
 	}
 }
 

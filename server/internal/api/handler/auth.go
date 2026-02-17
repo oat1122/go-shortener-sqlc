@@ -3,7 +3,7 @@ package handler
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -53,7 +53,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set HttpOnly Cookie
-	fmt.Printf("Login successful for user %s. Setting auth_token cookie...\n", user.Username)
+	slog.Info("Login successful", "username", user.Username)
 	http.SetCookie(w, &http.Cookie{
 		Name:     "auth_token",
 		Value:    token,

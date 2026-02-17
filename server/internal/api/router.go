@@ -1,8 +1,9 @@
 package api
 
 import (
-	"fmt"
+	"encoding/json"
 	"go-shortener-sqlc/internal/auth"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -32,6 +33,31 @@ func (s *Server) Routes() http.Handler {
 		MaxAge:           300,
 	}))
 
+	// Static File Serving for uploads (with aggressive caching)
+	fileServer := http.FileServer(http.Dir(s.Config.UploadDir))
+	r.Get("/uploads/*", func(w http.ResponseWriter, r *http.Request) {
+		// Set aggressive cache headers (UUID filenames never change)
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+
+		// Strip /uploads/ prefix so FileServer looks in the correct directory
+		http.StripPrefix("/uploads/", fileServer).ServeHTTP(w, r)
+	})
+
+	// Health Check Endpoint
+	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if err := s.DB.PingContext(r.Context()); err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			json.NewEncoder(w).Encode(map[string]string{
+				"status": "unhealthy",
+				"error":  err.Error(),
+			})
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"status": "healthy"})
+	})
+
 	// Routes
 	r.Post("/shorten", s.URLHandler.ShortenURL)
 	r.Get("/{code}", s.URLHandler.RedirectURL)
@@ -52,6 +78,10 @@ func (s *Server) Routes() http.Handler {
 		r.Get("/categories", s.BlogHandler.ListCategories)
 		r.Get("/tags", s.BlogHandler.ListTags)
 
+		// Public Image Endpoints
+		r.Get("/images", s.ImageHandler.List)
+		r.Get("/images/{id}", s.ImageHandler.Get)
+
 		// Admin Endpoints
 		r.Group(func(r chi.Router) {
 			r.Use(AdminOnlyMiddleware) // Protect these routes
@@ -70,6 +100,11 @@ func (s *Server) Routes() http.Handler {
 			r.Put("/admin/posts/{id}", s.BlogHandler.UpdatePost)
 			r.Patch("/admin/posts/{id}/views", s.BlogHandler.UpdatePostViews)
 			r.Delete("/admin/posts/{id}", s.BlogHandler.DeletePost)
+
+			// Admin Image Endpoints
+			r.Post("/admin/images", s.ImageHandler.Upload)
+			r.Put("/admin/images/{id}", s.ImageHandler.Update)
+			r.Delete("/admin/images/{id}", s.ImageHandler.Delete)
 		})
 	})
 
@@ -80,20 +115,20 @@ func AdminOnlyMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("auth_token")
 		if err != nil {
-			fmt.Printf("Auth Middleware Error: No cookie found. Error: %v\n Headers: %v\n", err, r.Header)
+			slog.Warn("Auth: no cookie found", "error", err, "path", r.URL.Path)
 			http.Error(w, "Unauthorized - No Cookie", http.StatusUnauthorized)
 			return
 		}
 
 		claims, err := auth.ValidateToken(cookie.Value)
 		if err != nil {
-			fmt.Printf("Auth Middleware Error: Invalid token. Error: %v\n", err)
+			slog.Warn("Auth: invalid token", "error", err)
 			http.Error(w, "Unauthorized - Invalid Token", http.StatusUnauthorized)
 			return
 		}
 
 		if claims.Role != "admin" {
-			fmt.Printf("Auth Middleware Error: Forbidden access. User Role: %s\n", claims.Role)
+			slog.Warn("Auth: forbidden access", "role", claims.Role)
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}

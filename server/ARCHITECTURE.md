@@ -13,6 +13,7 @@ The backend is built with **Go (Golang)** following **Clean Architecture** princ
 - **Utilities**:
   - **QR Code**: `yeqown/go-qrcode` for generation.
   - **Image Processing**: `fogleman/gg` & `golang.org/x/image` for resizing/manipulation.
+  - **File Uploads**: Multipart handling with Go `net/http`, JPEG encoding via `image/jpeg`.
   - **Rate Limiting**: `httprate` middleware (IP-based).
   - **UUID**: `google/uuid`.
 
@@ -30,6 +31,7 @@ server/
 │   │   ├── handler/          # HTTP Handlers
 │   │   │   ├── auth.go
 │   │   │   ├── blog.go
+│   │   │   ├── image.go
 │   │   │   ├── qr.go
 │   │   │   └── url.go
 │   │   ├── middleware/       # HTTP Middleware
@@ -47,12 +49,17 @@ server/
 │   │   └── query.sql.go
 │   ├── service/              # Business Logic Layer
 │   │   ├── blog_service.go
+│   │   ├── image_service.go
 │   │   ├── qr_service.go
 │   │   └── url_service.go
 │   └── utils/                # Shared Utilities
 │       ├── image.go
 │       ├── slug.go
 │       └── validator.go
+├── uploads/                  # Image Upload Storage
+│   ├── original/             # Full-size images
+│   ├── medium/               # 800px width
+│   └── thumb/                # 300px width
 ├── api.exe                   # Compiled binary
 ├── schema.sql                # Database Schema
 ├── query.sql                 # SQL Queries for sqlc
@@ -110,6 +117,37 @@ Requests flow through the system in a unidirectional manner:
 
 - Pure functions helpers.
 - **Examples**: `MakeSlug(string)`, `ResizeImage(image, width)`, `ValidateURL(string)`.
+
+## Image System
+
+The image system provides CRUD operations for managing images with SEO support and performance optimization.
+
+### Upload Pipeline
+
+`Multipart Upload` → **Validate MIME** → **Decode** → **Resize (3 sizes)** → **JPEG Encode** → **Save to Disk** → **Insert DB**
+
+### Image Sizes
+
+| Size       | Width | Purpose             |
+| ---------- | ----- | ------------------- |
+| `thumb`    | 300px | Thumbnails, lists   |
+| `medium`   | 800px | Blog content, cards |
+| `original` | As-is | Full resolution     |
+
+### SEO Fields
+
+- `alt_text`: Descriptive text for screen readers and image search.
+- `title`: Title attribute for hover tooltips.
+
+### Performance
+
+- **Cache-Control**: `public, max-age=31536000, immutable` (UUID filenames never change).
+- **Direct File Serve**: `http.FileServer` for efficient static file serving.
+- **JPEG Optimization**: Quality 80% for optimal size/quality ratio.
+
+### Post Integration
+
+Posts use `featured_image` (TEXT) to store an Image ID (UUID). The client resolves this to URLs via the Image API.
 
 ## Adding a New Feature
 

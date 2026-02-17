@@ -163,3 +163,26 @@ WHERE username = ? LIMIT 1;
 UPDATE users
 SET password_hash = ?
 WHERE username = ?;
+
+-- Image Queries
+
+-- name: CreateImage :exec
+INSERT INTO images (id, filename, original_name, alt_text, title, mime_type, size_bytes, width, height)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- name: GetImage :one
+SELECT * FROM images
+WHERE id = ? LIMIT 1;
+
+-- name: ListImages :many
+SELECT * FROM images
+ORDER BY created_at DESC;
+
+-- name: UpdateImage :exec
+UPDATE images
+SET alt_text = ?, title = ?, updated_at = CURRENT_TIMESTAMP
+WHERE id = ?;
+
+-- name: DeleteImage :exec
+DELETE FROM images
+WHERE id = ?;
