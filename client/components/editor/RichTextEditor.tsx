@@ -19,6 +19,7 @@ import {
   Image as ImageIcon,
   Link as LinkIcon,
 } from "lucide-react";
+import ImagePicker from "@/components/ImagePicker";
 
 interface RichTextEditorProps {
   content: string;
@@ -58,13 +59,9 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
     return null;
   }
 
-  const addImage = () => {
-    const url = window.prompt("URL");
-
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
-    }
-  };
+  if (!editor) {
+    return null;
+  }
 
   const setLink = () => {
     const previousUrl = editor.getAttributes("link").href;
@@ -153,9 +150,17 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
         <Button isIconOnly size="sm" variant="light" onPress={setLink}>
           <LinkIcon size={18} />
         </Button>
-        <Button isIconOnly size="sm" variant="light" onPress={addImage}>
-          <ImageIcon size={18} />
-        </Button>
+        <ImagePicker
+          onSelect={(id, url) => {
+            if (url) {
+              editor.chain().focus().setImage({ src: url }).run();
+            }
+          }}
+        >
+          <Button isIconOnly size="sm" variant="light">
+            <ImageIcon size={18} />
+          </Button>
+        </ImagePicker>
         <div className="flex-grow" />
         <Button
           isIconOnly

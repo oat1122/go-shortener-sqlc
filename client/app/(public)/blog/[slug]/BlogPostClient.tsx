@@ -2,7 +2,6 @@
 
 import React from "react";
 import Link from "next/link";
-import { Image } from "@heroui/image";
 import { Breadcrumbs, BreadcrumbItem } from "@heroui/breadcrumbs";
 import { Calendar, Eye, Folder, Home } from "lucide-react";
 

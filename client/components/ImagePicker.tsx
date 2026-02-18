@@ -14,6 +14,7 @@ import {
 } from "@heroui/modal";
 import { Tab, Tabs } from "@heroui/tabs";
 import { Card, CardBody } from "@heroui/card";
+import { RadioGroup, Radio } from "@heroui/radio";
 import { Upload, ImageIcon, Check } from "lucide-react";
 
 import { ImageItem } from "@/types/blog";
@@ -24,6 +25,7 @@ interface ImagePickerProps {
   previewUrl?: string; // Current image URL for preview
   onSelect: (imageId: string, imageUrl: string) => void;
   onClear?: () => void;
+  children?: React.ReactNode;
 }
 
 export default function ImagePicker({
@@ -31,6 +33,7 @@ export default function ImagePicker({
   previewUrl,
   onSelect,
   onClear,
+  children,
 }: ImagePickerProps) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
@@ -38,6 +41,9 @@ export default function ImagePicker({
   const uploadMutation = useUploadImage();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<
+    "original" | "medium" | "thumb"
+  >("medium");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadPreview, setUploadPreview] = useState("");
   const [altText, setAltText] = useState("");
@@ -74,7 +80,7 @@ export default function ImagePicker({
         title,
       });
 
-      onSelect(result.id, `${apiUrl}${result.urls.medium}`);
+      onSelect(result.id, `${apiUrl}${result.urls[selectedSize]}`);
       resetForm();
       onClose();
     } catch {
@@ -91,7 +97,7 @@ export default function ImagePicker({
     const img = images.find((i) => i.id === selectedId);
 
     if (img) {
-      onSelect(img.id, `${apiUrl}${img.urls.medium}`);
+      onSelect(img.id, `${apiUrl}${img.urls[selectedSize]}`);
       resetForm();
       onClose();
     }
@@ -99,15 +105,204 @@ export default function ImagePicker({
 
   const resetForm = () => {
     setSelectedId(null);
+    setSelectedSize("medium");
     setUploadFile(null);
     setUploadPreview("");
     setAltText("");
     setTitle("");
   };
 
+  const pickerModal = (
+    <Modal
+      isOpen={isOpen}
+      scrollBehavior="inside"
+      size="3xl"
+      onOpenChange={(open) => {
+        onOpenChange();
+        if (!open) resetForm();
+      }}
+    >
+      <ModalContent>
+        {(onClose) => (
+          <>
+            <ModalHeader>Select Image</ModalHeader>
+            <ModalBody>
+              <Tabs aria-label="Image source">
+                {/* Library Tab */}
+                <Tab key="library" title="Library">
+                  {images.length === 0 ? (
+                    <div className="text-center py-12 text-default-400">
+                      <ImageIcon className="mx-auto mb-2" size={40} />
+                      <p>No images uploaded yet</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-96 overflow-y-auto p-1">
+                      {images.map((img) => (
+                        <Card
+                          key={img.id}
+                          isPressable
+                          className={`cursor-pointer transition-all ${
+                            selectedId === img.id
+                              ? "ring-2 ring-primary ring-offset-2"
+                              : "hover:scale-105"
+                          }`}
+                          onPress={() => handleSelectExisting(img)}
+                        >
+                          <CardBody className="p-0 relative">
+                            <Image
+                              alt={img.alt_text || img.original_name}
+                              className="object-cover w-full aspect-square"
+                              radius="none"
+                              src={`${apiUrl}${img.urls.thumb}`}
+                            />
+                            {selectedId === img.id && (
+                              <div className="absolute top-1 right-1 bg-primary rounded-full p-0.5">
+                                <Check className="text-white" size={14} />
+                              </div>
+                            )}
+                            <p className="text-xs text-default-500 truncate px-2 py-1">
+                              {img.original_name}
+                            </p>
+                          </CardBody>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </Tab>
+
+                {/* Upload Tab */}
+                <Tab key="upload" title="Upload New">
+                  <div className="space-y-4">
+                    {uploadPreview ? (
+                      <div className="relative rounded-lg overflow-hidden bg-default-100 flex justify-center p-4">
+                        <Image
+                          alt="Preview"
+                          className="max-h-48 object-contain"
+                          src={uploadPreview}
+                        />
+                        <Button
+                          className="absolute top-2 right-2"
+                          color="danger"
+                          size="sm"
+                          variant="flat"
+                          onPress={() => {
+                            setUploadFile(null);
+                            setUploadPreview("");
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ) : (
+                      <div
+                        className="border-2 border-dashed border-default-300 rounded-lg p-10 flex flex-col items-center justify-center text-default-400 gap-3 cursor-pointer hover:border-primary hover:text-primary transition-colors"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => fileInputRef.current?.click()}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={handleDrop}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ")
+                            fileInputRef.current?.click();
+                        }}
+                      >
+                        <Upload size={36} />
+                        <span className="text-sm font-medium">
+                          Drop image here or click to browse
+                        </span>
+                        <span className="text-xs">
+                          JPEG, PNG, GIF, WebP — Max 10MB
+                        </span>
+                      </div>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      className="hidden"
+                      type="file"
+                      onChange={handleFileSelect}
+                    />
+                    <Input
+                      label="Alt Text (SEO)"
+                      placeholder="A photo of..."
+                      value={altText}
+                      variant="bordered"
+                      onValueChange={setAltText}
+                    />
+                    <Input
+                      label="Title (SEO)"
+                      placeholder="Image title"
+                      value={title}
+                      variant="bordered"
+                      onValueChange={setTitle}
+                    />
+                  </div>
+                </Tab>
+              </Tabs>
+            </ModalBody>
+            <ModalFooter className="flex-wrap gap-3">
+              <Button color="danger" variant="light" onPress={onClose}>
+                Cancel
+              </Button>
+
+              {/* Size Selector */}
+              <RadioGroup
+                className="flex-1"
+                label="Image Size"
+                orientation="horizontal"
+                size="sm"
+                value={selectedSize}
+                onValueChange={(v) =>
+                  setSelectedSize(v as "original" | "medium" | "thumb")
+                }
+              >
+                <Radio value="original">Original</Radio>
+                <Radio value="medium">Medium</Radio>
+                <Radio value="thumb">Thumb</Radio>
+              </RadioGroup>
+
+              {selectedId ? (
+                <Button
+                  color="primary"
+                  onPress={() => handleConfirmSelection(onClose)}
+                >
+                  Select Image
+                </Button>
+              ) : (
+                <Button
+                  color="primary"
+                  isDisabled={!uploadFile}
+                  isLoading={uploadMutation.isPending}
+                  startContent={<Upload size={18} />}
+                  onPress={() => handleUploadAndSelect(onClose)}
+                >
+                  Upload & Select
+                </Button>
+              )}
+            </ModalFooter>
+          </>
+        )}
+      </ModalContent>
+    </Modal>
+  );
+
+  // Render custom trigger if provided
+  if (children && React.isValidElement(children)) {
+    return (
+      <>
+        {/* @ts-ignore - cloneElement to attach handlers */}
+        {React.cloneElement(children as React.ReactElement, {
+          onPress: onOpen,
+          onClick: onOpen,
+        })}
+        {pickerModal}
+      </>
+    );
+  }
+
+  // Default trigger / preview if no custom children are provided or if children is not a valid element
   return (
     <>
-      {/* Trigger / Preview */}
       {value && previewUrl ? (
         <div className="relative rounded-lg overflow-hidden aspect-video">
           <Image
@@ -116,11 +311,16 @@ export default function ImagePicker({
             src={previewUrl}
           />
           <div className="absolute top-2 right-2 z-10 flex gap-1">
-            <Button color="primary" size="sm" variant="flat" onPress={onOpen}>
+            <Button color="primary" size="sm" variant="solid" onPress={onOpen}>
               Change
             </Button>
             {onClear && (
-              <Button color="danger" size="sm" variant="flat" onPress={onClear}>
+              <Button
+                color="danger"
+                size="sm"
+                variant="solid"
+                onPress={onClear}
+              >
                 Remove
               </Button>
             )}
@@ -141,161 +341,7 @@ export default function ImagePicker({
         </div>
       )}
 
-      {/* Picker Modal */}
-      <Modal
-        isOpen={isOpen}
-        scrollBehavior="inside"
-        size="3xl"
-        onOpenChange={(open) => {
-          onOpenChange();
-          if (!open) resetForm();
-        }}
-      >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>Select Image</ModalHeader>
-              <ModalBody>
-                <Tabs aria-label="Image source">
-                  {/* Library Tab */}
-                  <Tab key="library" title="Library">
-                    {images.length === 0 ? (
-                      <div className="text-center py-12 text-default-400">
-                        <ImageIcon className="mx-auto mb-2" size={40} />
-                        <p>No images uploaded yet</p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-96 overflow-y-auto p-1">
-                        {images.map((img) => (
-                          <Card
-                            key={img.id}
-                            isPressable
-                            className={`cursor-pointer transition-all ${
-                              selectedId === img.id
-                                ? "ring-2 ring-primary ring-offset-2"
-                                : "hover:scale-105"
-                            }`}
-                            onPress={() => handleSelectExisting(img)}
-                          >
-                            <CardBody className="p-0 relative">
-                              <Image
-                                alt={img.alt_text || img.original_name}
-                                className="object-cover w-full aspect-square"
-                                radius="none"
-                                src={`${apiUrl}${img.urls.thumb}`}
-                              />
-                              {selectedId === img.id && (
-                                <div className="absolute top-1 right-1 bg-primary rounded-full p-0.5">
-                                  <Check className="text-white" size={14} />
-                                </div>
-                              )}
-                              <p className="text-xs text-default-500 truncate px-2 py-1">
-                                {img.original_name}
-                              </p>
-                            </CardBody>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </Tab>
-
-                  {/* Upload Tab */}
-                  <Tab key="upload" title="Upload New">
-                    <div className="space-y-4">
-                      {uploadPreview ? (
-                        <div className="relative rounded-lg overflow-hidden bg-default-100 flex justify-center p-4">
-                          <Image
-                            alt="Preview"
-                            className="max-h-48 object-contain"
-                            src={uploadPreview}
-                          />
-                          <Button
-                            className="absolute top-2 right-2"
-                            color="danger"
-                            size="sm"
-                            variant="flat"
-                            onPress={() => {
-                              setUploadFile(null);
-                              setUploadPreview("");
-                            }}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ) : (
-                        <div
-                          className="border-2 border-dashed border-default-300 rounded-lg p-10 flex flex-col items-center justify-center text-default-400 gap-3 cursor-pointer hover:border-primary hover:text-primary transition-colors"
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => fileInputRef.current?.click()}
-                          onDragOver={(e) => e.preventDefault()}
-                          onDrop={handleDrop}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ")
-                              fileInputRef.current?.click();
-                          }}
-                        >
-                          <Upload size={36} />
-                          <span className="text-sm font-medium">
-                            Drop image here or click to browse
-                          </span>
-                          <span className="text-xs">
-                            JPEG, PNG, GIF, WebP — Max 10MB
-                          </span>
-                        </div>
-                      )}
-                      <input
-                        ref={fileInputRef}
-                        accept="image/jpeg,image/png,image/gif,image/webp"
-                        className="hidden"
-                        type="file"
-                        onChange={handleFileSelect}
-                      />
-                      <Input
-                        label="Alt Text (SEO)"
-                        placeholder="A photo of..."
-                        value={altText}
-                        variant="bordered"
-                        onValueChange={setAltText}
-                      />
-                      <Input
-                        label="Title (SEO)"
-                        placeholder="Image title"
-                        value={title}
-                        variant="bordered"
-                        onValueChange={setTitle}
-                      />
-                    </div>
-                  </Tab>
-                </Tabs>
-              </ModalBody>
-              <ModalFooter>
-                <Button color="danger" variant="light" onPress={onClose}>
-                  Cancel
-                </Button>
-                {selectedId ? (
-                  <Button
-                    color="primary"
-                    onPress={() => handleConfirmSelection(onClose)}
-                  >
-                    Select Image
-                  </Button>
-                ) : (
-                  <Button
-                    color="primary"
-                    isDisabled={!uploadFile}
-                    isLoading={uploadMutation.isPending}
-                    startContent={<Upload size={18} />}
-                    onPress={() => handleUploadAndSelect(onClose)}
-                  >
-                    Upload & Select
-                  </Button>
-                )}
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+      {pickerModal}
     </>
   );
 }
