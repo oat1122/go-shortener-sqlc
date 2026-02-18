@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { Breadcrumbs, BreadcrumbItem } from "@heroui/breadcrumbs";
 import { Calendar, Eye, Folder, Home } from "lucide-react";
+import { Image as HeroImage } from "@heroui/image";
 
 import BlogPostSkeleton from "@/components/skeletons/BlogPostSkeleton";
 import { usePublicPost } from "@/hooks/usePosts";
@@ -137,8 +138,8 @@ export default function BlogPostClient({ slug }: BlogPostClientProps) {
         </h1>
 
         {featuredImageUrl && (
-          <div className="relative w-full h-[400px] mb-8 rounded-xl overflow-hidden shadow-lg">
-            <img
+          <div className="relative w-full mb-8 rounded-xl overflow-hidden shadow-lg">
+            <HeroImage
               alt={title}
               className="w-full h-full object-cover"
               src={featuredImageUrl}

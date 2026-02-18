@@ -19,6 +19,7 @@ import {
   Image as ImageIcon,
   Link as LinkIcon,
 } from "lucide-react";
+
 import ImagePicker from "@/components/ImagePicker";
 
 interface RichTextEditorProps {
